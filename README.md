@@ -4,7 +4,7 @@ CSCI 5502 Data Mining semester group project.
 
 **Team:** Eddie Strand, Snehal Bhatnagar, Abdullah Bharde
 
-**Repository:** https://github.com/eddies410/Colorado-EV-Charging-Analysis
+**Repository:** [https://github.com/eddies410/Colorado-EV-Charging-Analysis](https://github.com/CSCI-5502-Data-Mining/Colorado-EV-Charging-Analysis)
 
 **Website:** https://colorado-ev-charging-analysis.vercel.app
 
