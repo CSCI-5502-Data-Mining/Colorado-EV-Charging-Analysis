@@ -53,9 +53,3 @@ Acquisition instructions: [`data/README.md`](data/README.md). Do not commit secr
 - Milestone 1 — Project framing, literature/context, repository, and website
 - Later milestones — Data preparation, exploratory analysis, modeling (only if justified), evaluation, and final communication
 
-## Next iteration (skeletons still open)
-
-- Photos and remaining bios/links for Eddie and Snehal
-- Confirm GitHub Pages public URL
-- Confirm ACS tables, years, and ZIP/ZCTA join
-- Add a small licensed sample file only after review
