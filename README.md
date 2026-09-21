@@ -6,7 +6,7 @@ CSCI 5502 Data Mining semester group project.
 
 **Repository:** https://github.com/eddies410/Colorado-EV-Charging-Analysis
 
-**Website:** GitHub Pages from this repository (public URL pending once Pages is enabled on the branch used for submission).
+**Website:** https://colorado-ev-charging-analysis.vercel.app
 
 ## Project goal
 
