@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="CSCI 5502 group project on EV adoption and charging access in Colorado." />
+  <title>Colorado EV Charging Access &amp; Adoption</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="#top">Colorado EV Access</a>
+      <button class="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+      <nav class="nav-links">
+        <a href="#intro">Introduction</a>
+        <a href="#questions">Research Questions</a>
+        <a href="#background">Background</a>
+        <a href="#proposal">Proposal</a>
+        <a href="#team">Team</a>
+        <a href="#repo">Repository</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">CSCI 5502 · Data Mining · Milestone 1</p>
+          <h1>Colorado EV Charging Access &amp; Adoption</h1>
+          <p class="hero-text">
+            Investigating where Colorado’s public EV charging network aligns with current demand — and where gaps may remain for lower-income, renter-heavy, and rural communities.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#questions">View Research Questions</a>
+            <a class="button secondary" href="#proposal">See Project Plan</a>
+          </div>
+        </div>
+        <figure class="visual-card" aria-label="Project blueprint diagram">
+          <div class="visual-title">Project blueprint</div>
+          <div class="flow-row">
+            <div class="flow-box"><strong>EV registrations</strong><span>Where adoption is occurring</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box"><strong>Charging network</strong><span>Where public ports exist</span></div>
+          </div>
+          <div class="flow-row">
+            <div class="flow-box"><strong>Community data</strong><span>Income, housing, density</span></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box"><strong>Priority areas</strong><span>Demand + access + equity</span></div>
+          </div>
+          <figcaption>Team-created diagram of the planned investigation. No modeling methods are assumed yet.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="intro" class="section">
+      <div class="container narrow">
+        <p class="section-kicker">A. Introduction</p>
+        <h2>Why this problem matters</h2>
+        <p>
+          Colorado is expanding electric-vehicle infrastructure, but charger availability may not match current EV ownership, expected demand, or community need. Residents who rent, live in multifamily housing, or live in lower-density rural areas often have fewer opportunities to charge at home and may depend more on public infrastructure.
+        </p>
+        <p>
+          The decision this project supports is practical: <strong>where additional public charging would better balance demand and equity</strong>, rather than only following where EVs already cluster. A demand-only view could favor affluent neighborhoods that already have higher EV ownership.
+        </p>
+
+        <figure class="context-figure">
+          <div class="visual-title">Colorado public EV charging, by port type</div>
+          <p class="muted figure-lead">
+            Statewide counts from the U.S. Department of Energy Alternative Fuels Data Center (AFDC), last updated 3 September 2026. These are published totals, not our analysis.
+          </p>
+          <div class="stat-row" role="img" aria-label="Colorado has 2,871 public electric station locations and 7,763 charging ports.">
+            <div class="stat"><strong>2,871</strong><span>Public electric station locations</span></div>
+            <div class="stat"><strong>7,763</strong><span>Public charging ports</span></div>
+          </div>
+          <div class="bar-chart" aria-hidden="true">
+            <div class="bar-item"><span>Level 1</span><div class="bar-track"><div class="bar" style="width: 1%"></div></div><em>55</em></div>
+            <div class="bar-item"><span>Level 2</span><div class="bar-track"><div class="bar" style="width: 78%"></div></div><em>6,041</em></div>
+            <div class="bar-item"><span>DC fast</span><div class="bar-track"><div class="bar" style="width: 21%"></div></div><em>1,667</em></div>
+          </div>
+          <figcaption>
+            Source: U.S. Department of Energy, Alternative Fuels Data Center. (2026, September 3). <em>Alternative fueling station counts by state</em>.
+            <a href="https://afdc.energy.gov/stations/states" target="_blank" rel="noopener">afdc.energy.gov/stations/states</a>.
+            Residential chargers are excluded. Totals can change as AFDC updates the Station Locator.
+          </figcaption>
+        </figure>
+
+        <p class="muted">
+          Official station-level map (not our figure):
+          <a href="https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7" target="_blank" rel="noopener">Colorado Information Marketplace charging map</a>.
+        </p>
+
+        <div class="cards three">
+          <article class="card"><h3>Demand</h3><p>Where does EV ownership suggest a need for more public charging capacity?</p></article>
+          <article class="card"><h3>Equity</h3><p>Which communities may face greater barriers to home charging or public charging access?</p></article>
+          <article class="card"><h3>Geography</h3><p>How do patterns differ between urban, suburban, and rural parts of Colorado?</p></article>
+        </div>
+
+        <h3>Key stakeholders</h3>
+        <ul class="clean-list">
+          <li>Current and prospective EV owners, especially those without reliable home charging</li>
+          <li>Lower-income and renter-heavy communities</li>
+          <li>Rural communities and small municipalities</li>
+          <li>Colorado Energy Office, CDOT, and local transportation or planning agencies</li>
+          <li>Utilities, charging networks, and infrastructure planners</li>
+        </ul>
+
+        <h3>What is already known, and the gap</h3>
+        <p>
+          National and state work already tracks EV registrations, public charger locations, and corridor charging plans. Research also shows that charging availability and EV adoption often vary with income, housing type, and urban/rural setting. Colorado planning documents treat rural and disproportionately impacted communities as a priority for charging investment.
+        </p>
+        <p>
+          The unanswered question for this project is more local: <strong>which Colorado areas combine expected charging demand with limited existing access</strong>, once socioeconomic and housing conditions are taken into account? Statewide totals and corridor maps do not by themselves show ZIP- or community-level mismatches between registrations, ports, and who can charge at home.
+        </p>
+
+        <h3>Semester blueprint</h3>
+        <p>What the team plans to investigate this semester (framing first; modeling later):</p>
+        <ol class="steps">
+          <li>Acquire and document Colorado EV registration, charging, usage, and community datasets.</li>
+          <li>Standardize records to a common geographic level and record join limitations (ZIP vs. ZCTA, snapshot dates).</li>
+          <li>Describe how EV adoption relates to income, housing, and urban/rural setting, and how charger availability compares.</li>
+          <li>Identify areas that appear underserved relative to current or expected demand, with an equity-aware priority view.</li>
+          <li>Communicate results with maps and a transparent scoring framework — not a black-box ranking.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="questions" class="section alt">
+      <div class="container narrow">
+        <p class="section-kicker">B. Research Questions</p>
+        <h2>Questions guiding the investigation</h2>
+        <p>
+          These refine the approved Milestone 0 question:
+          <em>What factors are associated with EV adoption in Colorado, and which areas appear underserved by the existing charging network?</em>
+          They are written to be answerable with the planned data. Model names are intentionally omitted.
+        </p>
+        <div class="question-list">
+          <article class="question">
+            <span>RQ1</span>
+            <div>
+              <p class="q-type">Relationship / pattern</p>
+              <p>How do income and housing characteristics (including affordability and renter share, as data allow) relate to EV adoption and public charger availability across Colorado?</p>
+            </div>
+          </article>
+          <article class="question">
+            <span>RQ2</span>
+            <div>
+              <p class="q-type">Comparative</p>
+              <p>Which Colorado areas have high EV adoption relative to the number of available public charging ports?</p>
+            </div>
+          </article>
+          <article class="question">
+            <span>RQ3</span>
+            <div>
+              <p class="q-type">Comparative</p>
+              <p>How does charging-port density differ between urban and rural areas of Colorado?</p>
+            </div>
+          </article>
+          <article class="question">
+            <span>RQ4</span>
+            <div>
+              <p class="q-type">Descriptive / identification</p>
+              <p>Which Colorado areas show the greatest combination of expected charging demand and limited existing charging access?</p>
+            </div>
+          </article>
+        </div>
+        <p class="note">
+          RQ1–RQ3 map directly to the Milestone 0 sub-questions. RQ4 is the intended map/priority-score output. We are not forcing a predictive modeling question at this stage.
+        </p>
+      </div>
+    </section>
+
+    <section id="background" class="section">
+      <div class="container narrow">
+        <p class="section-kicker">Background / Related Work</p>
+        <h2>What prior work tells us</h2>
+        <p>Each source below is summarized for what it contributes to our framing, not listed as a citation-only bullet.</p>
+
+        <article class="source-card">
+          <h3>Charging infrastructure, income, and adoption</h3>
+          <p>
+            Gifford and Barbier (2026) study county-level charger expansion in Washington State (2019–2023). They find that new public chargers are associated with higher battery-EV adoption, but the effect is concentrated in high-income counties, and fast chargers show larger effects than slower chargers. Plug-in hybrids do not show the same pattern. For our project, this supports treating income as a conditioning factor, not assuming that “more chargers everywhere” has a uniform adoption effect, and being cautious about demand-only investment rules that could widen gaps.
+          </p>
+          <p class="cite">Gifford &amp; Barbier, 2026, <em>Energy Policy</em>.</p>
+          <a href="https://doi.org/10.1016/j.enpol.2026.115098" target="_blank" rel="noopener">DOI 10.1016/j.enpol.2026.115098 ↗</a>
+        </article>
+
+        <article class="source-card">
+          <h3>National inequality in EV ownership and charging</h3>
+          <p>
+            Lee et al. (2025) quantify income and racial/ethnic inequality in U.S. plug-in EV adoption and public charging relative to conventional vehicles and gas stations. They report that charging-infrastructure income inequality is about three times larger than that of gas stations, with large variation across states and metro areas, and that adoption inequality and infrastructure inequality do not always move together. This motivates a Colorado-specific look: national averages can hide local mismatches, which is exactly the gap our ZIP/community analysis is meant to address.
+          </p>
+          <p class="cite">Lee et al., 2025, <em>Applied Energy</em>.</p>
+          <a href="https://doi.org/10.1016/j.apenergy.2024.124795" target="_blank" rel="noopener">DOI 10.1016/j.apenergy.2024.124795 ↗</a>
+        </article>
+
+        <article class="source-card">
+          <h3>Colorado charging policy context</h3>
+          <p>
+            Colorado’s 2022 NEVI Plan (CDOT, with Colorado Energy Office partnership described in the plan) frames public charging as necessary for statewide EV targets and explicitly calls out remaining gaps in rural and disproportionately impacted communities, as well as urban challenges such as apartment and condo residents without affordable home charging. It is a planning document, not a ZIP-level equity analysis. It gives us the decision context and stakeholder language; it does not replace our empirical comparison of registrations, ports, and community characteristics.
+          </p>
+          <p class="cite">Colorado Department of Transportation, 2022.</p>
+          <a href="https://www.codot.gov/programs/innovativemobility/assets/co_neviplan_2022_final-1.pdf" target="_blank" rel="noopener">Colorado NEVI Plan (PDF) ↗</a>
+        </article>
+      </div>
+    </section>
+
+    <section id="proposal" class="section alt">
+      <div class="container">
+        <p class="section-kicker">D. Proposal Overview</p>
+        <h2>Approved idea, data, and constraints</h2>
+        <div class="proposal-grid">
+          <div>
+            <h3>Problem</h3>
+            <p>Colorado’s EV charging infrastructure may not fully reflect current demand or the needs of underserved communities. Lower-income and renter-heavy areas may have less access to home charging and fewer public options.</p>
+          </div>
+          <div>
+            <h3>Goal</h3>
+            <p>Identify socioeconomic and geographic factors associated with EV adoption in Colorado and determine where additional public charging could best balance demand and equity.</p>
+          </div>
+        </div>
+        <p>
+          <strong>Intended output (Milestone 0):</strong> a Colorado map or priority score identifying areas with high expected charging demand and limited existing access.
+        </p>
+
+        <h3>Change after Milestone 0</h3>
+        <p>
+          The core problem, goal, and charging/EV sources are unchanged. We added <strong>U.S. Census ACS community estimates</strong> to the planned stack because the approved questions require income and housing context, which were not in the Milestone 0 data table. Exact ACS tables, years, and the ZIP/ZCTA join still need to be specified in a later milestone. Research questions were restated more tightly (four questions instead of one umbrella question plus two bullets) so each can be mapped to evidence.
+        </p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Source</th><th>Purpose</th><th>Main variables</th><th>Access / constraint</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><a href="https://www.atlasevhub.com/market-data/state-ev-registration-data/" target="_blank" rel="noopener">Atlas EV Hub</a> / Colorado Energy Office</td>
+                <td>Measure EV adoption</td>
+                <td>ZIP code, vehicle count, make, model, powertrain, snapshot date</td>
+                <td>Public CSV; ODbL. Registration ZIP is only a proxy for charging demand.</td>
+              </tr>
+              <tr>
+                <td><a href="https://afdc.energy.gov/data_download" target="_blank" rel="noopener">DOE AFDC</a></td>
+                <td>Measure charging infrastructure</td>
+                <td>ZIP, lat/long, charger type, port count, access type</td>
+                <td>Public download/API. Status and update cadence vary; no utilization field.</td>
+              </tr>
+              <tr>
+                <td><a href="https://atlaspolicy.com/evaluateco/" target="_blank" rel="noopener">EValuateCO</a></td>
+                <td>Supplementary observed usage</td>
+                <td>Location, usage, cost, provider/network, charger characteristics</td>
+                <td>Subset of Charge Ahead Colorado–funded stations; selection bias. Use for validation, not as the sole utilization measure.</td>
+              </tr>
+              <tr>
+                <td><a href="https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7" target="_blank" rel="noopener">Colorado Information Marketplace</a></td>
+                <td>Cross-check Colorado stations</td>
+                <td>Location, charger/fuel type, ZIP, coordinates</td>
+                <td>May overlap AFDC; duplicates must be checked.</td>
+              </tr>
+              <tr>
+                <td><a href="https://www.census.gov/data/developers/data-sets/acs-5year.html" target="_blank" rel="noopener">U.S. Census ACS</a> <em>(added after M0)</em></td>
+                <td>Income, housing, and population context</td>
+                <td class="skeleton">Exact tables TBD (income, renter share, housing, vehicles, urban/rural proxy)</td>
+                <td>Survey estimates; ZCTAs do not perfectly match USPS ZIP codes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Major constraints (from Milestone 0)</h3>
+        <div class="cards two">
+          <article class="card"><h4>Equity bias</h4><p>Existing EV ownership may already reflect income inequality. Mitigation: include income, renter share, and charger access in an equity-aware priority view — not demand alone.</p></article>
+          <article class="card"><h4>Demand proxy</h4><p>Registration location is not where a vehicle is charged. Treat registrations as residential demand estimates and combine them with charger and population data.</p></article>
+          <article class="card"><h4>Usage coverage</h4><p>EValuateCO covers only selected funded stations and may not represent statewide behavior.</p></article>
+          <article class="card"><h4>Temporal mismatch</h4><p>Datasets may represent different years or update schedules. Snapshot dates will be recorded during data prep.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section id="team" class="section">
+      <div class="container">
+        <p class="section-kicker">C. Team</p>
+        <h2>Project team</h2>
+        <p>Names match the approved Milestone 0 proposal. Photos, full bios, and professional links that we do not have are marked for the next iteration.</p>
+        <div class="team-grid three">
+          <article class="team-card">
+            <div class="photo-skel" role="img" aria-label="Photo pending for Eddie Strand">Photo pending</div>
+            <h3>Eddie Strand</h3>
+            <p class="muted">Listed on Milestone 0 proposal</p>
+            <p class="skeleton">Short professional bio pending (2–3 sentences: background, interests, goals).</p>
+            <p><strong>Initial responsibilities (draft):</strong> data acquisition and cleaning, exploratory analysis, repository maintenance. Overlap expected.</p>
+            <div class="team-links">
+              <a href="https://github.com/eddies410" target="_blank" rel="noopener">GitHub</a>
+              <span class="skeleton-inline">LinkedIn pending</span>
+            </div>
+          </article>
+
+          <article class="team-card">
+            <div class="photo-skel" role="img" aria-label="Photo pending for Snehal Bhatnagar">Photo pending</div>
+            <h3>Snehal Bhatnagar</h3>
+            <p class="muted">M.S. Data Science student, University of Colorado Boulder</p>
+            <p>Interested in data engineering, machine learning, and applied data science, with a focus on using data-driven methods to solve real-world infrastructure and decision-making problems.</p>
+            <p><strong>Initial responsibilities (draft):</strong> project coordination, socioeconomic and EV-adoption analysis, visualization and mapping, documentation, and website development.</p>
+            <div class="team-links">
+              <span class="skeleton-inline">GitHub pending</span>
+              <span class="skeleton-inline">LinkedIn pending</span>
+            </div>
+          </article>
+
+          <article class="team-card">
+            <img class="team-photo" src="team/abdullah-bharde.jpg" alt="Headshot of Abdullah Bharde" width="192" height="192" />
+            <h3>Abdullah Bharde</h3>
+            <p class="muted">M.S. Data Science student, University of Colorado Boulder</p>
+            <p>Computer Engineering graduate (University of Mumbai) and former SDE-1 at Lepton Software, where he worked on backend APIs, ETL pipelines, and location-intelligence / spatial data systems. Interested in applied data science, data engineering, and geospatial analysis for infrastructure and decision-making problems.</p>
+            <p><strong>Initial responsibilities (draft):</strong> geospatial joins and mapping support, data pipelines / reproducibility, analysis as the project moves beyond framing. Overlap expected.</p>
+            <div class="team-links">
+              <a href="https://github.com/Abdul-16" target="_blank" rel="noopener">GitHub</a>
+              <a href="https://www.linkedin.com/in/abdullah-bharde-955ba6222/" target="_blank" rel="noopener">LinkedIn</a>
+            </div>
+          </article>
+        </div>
+        <p class="note">Roles may overlap and may change. Coordination, data, analysis, visualization, documentation, and reproducibility are all in scope for the group.</p>
+      </div>
+    </section>
+
+    <section id="repo" class="section alt">
+      <div class="container narrow">
+        <p class="section-kicker">Repository &amp; Reproducibility</p>
+        <h2>Shared project infrastructure</h2>
+        <ul class="clean-list">
+          <li>Repository: <a href="https://github.com/eddies410/Colorado-EV-Charging-Analysis" target="_blank" rel="noopener">github.com/eddies410/Colorado-EV-Charging-Analysis</a></li>
+          <li>Website (this page): intended as GitHub Pages from the repository root. <span class="skeleton-inline">Public Pages URL pending once Pages is enabled on the default branch</span></li>
+          <li>Folders: <code>data/</code> (instructions only), <code>notebooks/</code>, <code>src/</code>, <code>figures/</code>, <code>docs/</code>, <code>references/</code></li>
+          <li><code>.gitignore</code> excludes secrets, virtual environments, and raw data dumps</li>
+        </ul>
+        <p>No passwords, API keys, credentials, or restricted personal data are stored in the repo. If a dataset cannot be redistributed, acquisition steps live in <code>data/README.md</code>.</p>
+      </div>
+    </section>
+
+    <section class="section references">
+      <div class="container narrow">
+        <p class="section-kicker">References</p>
+        <h2>Works cited</h2>
+        <p>APA 7th edition. A copy is also in <a href="https://github.com/eddies410/Colorado-EV-Charging-Analysis/blob/milestone1-website/references/references.md">references/references.md</a>.</p>
+        <ol>
+          <li>Atlas Public Policy. (n.d.). <em>EValuateCO</em>. <a href="https://atlaspolicy.com/evaluateco/" target="_blank" rel="noopener">https://atlaspolicy.com/evaluateco/</a></li>
+          <li>Atlas Public Policy. (n.d.). <em>State EV registration data</em>. Atlas EV Hub. <a href="https://www.atlasevhub.com/market-data/state-ev-registration-data/" target="_blank" rel="noopener">https://www.atlasevhub.com/market-data/state-ev-registration-data/</a></li>
+          <li>Colorado Department of Transportation. (2022). <em>Colorado National Electric Vehicle Infrastructure (NEVI) Plan</em>. <a href="https://www.codot.gov/programs/innovativemobility/assets/co_neviplan_2022_final-1.pdf" target="_blank" rel="noopener">https://www.codot.gov/programs/innovativemobility/assets/co_neviplan_2022_final-1.pdf</a></li>
+          <li>Gifford, T. C., &amp; Barbier, E. B. (2026). The role of charging infrastructure and income on electric vehicle adoption. <em>Energy Policy, 211</em>, 115098. <a href="https://doi.org/10.1016/j.enpol.2026.115098" target="_blank" rel="noopener">https://doi.org/10.1016/j.enpol.2026.115098</a></li>
+          <li>Lee, D.-Y., Wilson, A., McDermott, M. H., Sovacool, B. K., Kaufmann, R., Isaac, R., Cleveland, C., Smith, M., Brown, M., &amp; Ward, J. (2025). Does electric mobility display racial or income disparities? Quantifying inequality in the distribution of electric vehicle adoption and charging infrastructure in the United States. <em>Applied Energy, 378</em>(Part A), 124795. <a href="https://doi.org/10.1016/j.apenergy.2024.124795" target="_blank" rel="noopener">https://doi.org/10.1016/j.apenergy.2024.124795</a></li>
+          <li>State of Colorado. (n.d.). <em>Map of alternative fuels and electric vehicle charging stations</em>. Colorado Information Marketplace. <a href="https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7" target="_blank" rel="noopener">https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7</a></li>
+          <li>U.S. Census Bureau. (n.d.). <em>American Community Survey 5-year data</em>. <a href="https://www.census.gov/data/developers/data-sets/acs-5year.html" target="_blank" rel="noopener">https://www.census.gov/data/developers/data-sets/acs-5year.html</a></li>
+          <li>U.S. Department of Energy, Alternative Fuels Data Center. (2026, September 3). <em>Alternative fueling station counts by state</em>. <a href="https://afdc.energy.gov/stations/states" target="_blank" rel="noopener">https://afdc.energy.gov/stations/states</a></li>
+        </ol>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <span>CSCI 5502 · Semester Group Project · Milestone 1</span>
+      <span>Eddie Strand · Snehal Bhatnagar · Abdullah Bharde</span>
+    </div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
