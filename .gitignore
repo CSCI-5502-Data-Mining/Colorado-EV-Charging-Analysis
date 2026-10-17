@@ -3,6 +3,7 @@ Thumbs.db
 
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 credentials*
@@ -26,3 +27,9 @@ data/*.zip
 figures/*.png
 figures/*.jpg
 !figures/.gitkeep
+# Milestone 2 EDA charts (tracked deliverables)
+!figures/01_ev_rate_distribution.png
+!figures/02_income_vs_ev.png
+!figures/03_supply_vs_adoption.png
+!figures/04_renter_vs_ports.png
+!figures/05_missingness.png

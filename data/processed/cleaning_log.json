@@ -1,0 +1,29 @@
+{
+  "atlas_file": "CO_EV_Registrations_10_2026.csv",
+  "afdc_file": "alt_fuel_stations (Oct 15 2026).csv",
+  "atlas_repaired_truncated_tail": false,
+  "atlas_raw_rows": 5970397,
+  "atlas_latest_snapshot": "2026-07-07",
+  "atlas_latest_snapshot_vehicles_all_classes": 215105,
+  "atlas_vehicle_scope": "all vehicle classes",
+  "atlas_total_vehicles_all_classes": 215105,
+  "atlas_light_duty_vehicles": 202639,
+  "atlas_zip_rows": 1150,
+  "atlas_colorado_pattern_zips": 490,
+  "atlas_vehicles_outside_colorado_pattern_zips": 988,
+  "afdc_raw_rows": 3169,
+  "afdc_status_counts": {
+    "E": 3105,
+    "T": 52,
+    "P": 12
+  },
+  "afdc_access_counts": {
+    "public": 2973,
+    "private": 196
+  },
+  "afdc_open_public_stations": 2910,
+  "afdc_zip_rows": 294,
+  "afdc_l1_ports": 55,
+  "afdc_l2_ports": 6161,
+  "afdc_dcfc_ports": 1716
+}
