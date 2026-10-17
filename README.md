@@ -35,21 +35,37 @@ Acquisition instructions: [`data/README.md`](data/README.md). Do not commit secr
 
 Raw data files are **not** in the repository (large / licensed). Follow [`data/README.md`](data/README.md) to place them in `data/raw/`, then:
 
+Run these from the repository root, one at a time:
+
 ```bash
+# 1. Create and activate a repo-local virtual environment
 python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
+source .venv/bin/activate        # Windows PowerShell: .venv\Scripts\Activate.ps1
+
+# 2. Install pinned dependencies
 pip install -r requirements.txt
 
-# 1. Fetch Census ACS ZCTA estimates (free API key required)
-export CENSUS_API_KEY="YOUR_KEY" # Windows PowerShell: $env:CENSUS_API_KEY="YOUR_KEY"
-python src/fetch_acs.py
+# 3. Add your Census API key (free: https://api.census.gov/data/key_signup.html)
+cp .env.example .env             # Windows PowerShell: copy .env.example .env
+#    then edit .env and set CENSUS_API_KEY=your_key  (.env is git-ignored)
 
-# 2. Clean, join, and generate the processed dataset + five EDA charts
+# 4. (optional) Fetch the national Census ACS ZCTA estimates.
+#    python-dotenv auto-loads CENSUS_API_KEY from .env, so no manual export is needed.
+#    Skip this if data/raw/acs_zcta_2024.csv is already present — the pipeline runs without it.
+python src/fetch_acs.py
+#    (An exported env var still works and overrides .env:
+#     export CENSUS_API_KEY="YOUR_KEY"  / PowerShell: $env:CENSUS_API_KEY="YOUR_KEY")
+
+# 5. Clean, join, and generate the processed dataset + five EDA charts
 python src/prepare_and_eda.py
 
-# 3. (optional) run the offline cleaning-rule tests
-python -m unittest discover -s tests
+# 6. (optional) Run the offline cleaning-rule tests
+python -m unittest discover -s tests   # or: pytest tests
 ```
+
+View the results after step 5:
+- Processed tables and reports are in `data/processed/` (open the `.csv`/`.json` files).
+- The five EDA charts are PNGs in `figures/` — open `figures/01_ev_rate_distribution.png` through `figures/05_missingness.png`.
 
 Outputs (regenerated, not committed as raw data):
 - `data/processed/colorado_ev_zcta_clean.csv` — analysis-ready, one row per matched code

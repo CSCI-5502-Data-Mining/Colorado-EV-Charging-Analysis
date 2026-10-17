@@ -15,6 +15,15 @@ from pathlib import Path
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
+
+# Auto-load CENSUS_API_KEY (and any other vars) from the repo-root .env if
+# python-dotenv is installed. override=False so a real exported env var wins.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / '.env', override=False)
+except ImportError:
+    pass
+
 BASE = 'https://api.census.gov/data/2024/acs/acs5'
 VARIABLES = ['B01003_001E','B19013_001E','B25003_001E','B25003_003E']
 

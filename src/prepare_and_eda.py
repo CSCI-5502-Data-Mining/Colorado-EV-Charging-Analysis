@@ -27,6 +27,25 @@ import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / 'data' / 'raw'
 
+# Auto-load .env (e.g. CENSUS_API_KEY) if python-dotenv is installed, so both
+# pipeline scripts behave the same way. The pipeline itself does not need the
+# key; this is harmless when dotenv is absent. override=False keeps a real
+# exported env var authoritative.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / '.env', override=False)
+except ImportError:
+    pass
+
+
+def _rel_to_root(path):
+    """Repo-root-relative POSIX path so tracked outputs carry no machine-specific
+    absolute path. Falls back to the basename if the path is outside the root."""
+    try:
+        return Path(path).resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return Path(path).name
+
 ALIAS = {
  'zip': ['ZIP Code','ZIP','Station ZIP','Postal Code','zip code tabulation area','zcta'],
  'snapshot_flag': ['Latest DMV Snapshot Flag'],
@@ -207,7 +226,7 @@ def main():
     st_path=resolve_raw(args.stations,'alt_fuel_stations*.csv','afdc_co_stations.csv')
     acs_path=resolve_raw(args.acs,'acs_zcta_2024.csv')
     out=Path(args.out);figs=Path(args.figures);out.mkdir(parents=True,exist_ok=True);figs.mkdir(parents=True,exist_ok=True)
-    log={'generated_utc':datetime.now(timezone.utc).isoformat(), 'join_method':'5-digit USPS ZIP matched to 2020-based Census ZCTA code (proxy; not guaranteed spatial match)', 'vehicle_scope':'all vehicle classes', 'source_files':{'ev':ev_path,'stations':st_path,'acs':acs_path}}
+    log={'generated_utc':datetime.now(timezone.utc).isoformat(), 'join_method':'5-digit USPS ZIP matched to 2020-based Census ZCTA code (proxy; not guaranteed spatial match)', 'vehicle_scope':'all vehicle classes', 'source_files':{'ev':_rel_to_root(ev_path),'stations':_rel_to_root(st_path),'acs':_rel_to_root(acs_path)}}
     ev=clean_ev(ev_path,log);st=clean_stations(st_path,log);acs=clean_acs(acs_path,log)
     # Preserve all EV ZIPs and public-charger ZIPs; ACS unmatched rows remain visible.
     key=pd.concat([ev[['zcta']],st[['zcta']]],ignore_index=True).drop_duplicates()

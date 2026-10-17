@@ -1,11 +1,11 @@
 {
-  "generated_utc": "2026-10-17T05:50:19.439908+00:00",
+  "generated_utc": "2026-10-17T07:36:32.898758+00:00",
   "join_method": "5-digit USPS ZIP matched to 2020-based Census ZCTA code (proxy; not guaranteed spatial match)",
   "vehicle_scope": "all vehicle classes",
   "source_files": {
-    "ev": "/Users/abdullahbharde/CU Boulder/Data Mining/Group Project/Colorado-EV-Charging-Analysis/data/raw/CO_EV_Registrations_10_2026.csv",
-    "stations": "/Users/abdullahbharde/CU Boulder/Data Mining/Group Project/Colorado-EV-Charging-Analysis/data/raw/alt_fuel_stations (Oct 15 2026).csv",
-    "acs": "/Users/abdullahbharde/CU Boulder/Data Mining/Group Project/Colorado-EV-Charging-Analysis/data/raw/acs_zcta_2024.csv"
+    "ev": "data/raw/CO_EV_Registrations_10_2026.csv",
+    "stations": "data/raw/alt_fuel_stations (Oct 15 2026).csv",
+    "acs": "data/raw/acs_zcta_2024.csv"
   },
   "ev_source_rows": 5970397,
   "latest_snapshot_method": "Latest DMV Snapshot Flag == TRUE",

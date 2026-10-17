@@ -25,7 +25,7 @@ Raw files go in `data/raw/` (gitignored). Place them with these names (the pipel
 | --- | --- | --- |
 | `CO_EV_Registrations_*.csv` | Atlas EV Hub / Colorado Energy Office | Download the **Colorado** CSV from the [state EV registration data page](https://www.atlasevhub.com/market-data/state-ev-registration-data/). Keep the full file with all historical snapshots so the latest-snapshot flag can be applied reproducibly. |
 | `alt_fuel_stations*.csv` | U.S. DOE AFDC | Download from [afdc.energy.gov/data_download](https://afdc.energy.gov/data_download) with filters **Electric / Public / Existing / Colorado**. |
-| `acs_zcta_2024.csv` | U.S. Census Bureau | Generate with the script: `export CENSUS_API_KEY=...` then `python src/fetch_acs.py`. Pulls **national** ZCTAs (not Colorado-only) so the ZIP/ZCTA code match can be audited. Free key: https://api.census.gov/data/key_signup.html |
+| `acs_zcta_2024.csv` | U.S. Census Bureau | Copy `.env.example` to `.env` and set `CENSUS_API_KEY=your_key`, then run `python src/fetch_acs.py` (python-dotenv auto-loads the key from `.env`; an exported `CENSUS_API_KEY` env var still works and takes precedence). Pulls **national** ZCTAs (not Colorado-only) so the ZIP/ZCTA code match can be audited. Free key: https://api.census.gov/data/key_signup.html |
 
 ### Acquisition checklist (Milestone 2)
 

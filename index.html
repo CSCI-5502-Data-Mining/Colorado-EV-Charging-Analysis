@@ -31,6 +31,7 @@
 <nav class="nav-links">
 <a href="#intro">Introduction</a>
 <a href="#questions">Research Questions</a>
+<a href="#data">Data &amp; Exploration</a>
 <a href="#background">Background</a>
 <a href="#proposal">Proposal</a>
 <a href="#team">Team</a>
@@ -44,7 +45,7 @@
 <section class="hero">
 <div class="container hero-grid">
 <div>
-<p class="eyebrow">CSCI 5502 · Data Mining · Milestone 1</p>
+<p class="eyebrow">CSCI 5502 · Data Mining · Milestone 2</p>
 <h1>Colorado EV Charging Access &amp; Adoption</h1>
 <p class="hero-text">
 Investigating where Colorado’s public EV charging network aligns with current demand — and where gaps may remain for lower-income, renter-heavy, and rural communities.
@@ -243,6 +244,115 @@ RQ1–RQ3 map directly to the Milestone 0 sub-questions. RQ4 is the intended map
 </div>
 </section>
 
+<section id="data" class="section alt">
+<div class="container narrow">
+<p class="section-kicker">Milestone 2 · Data &amp; Data Exploration</p>
+<h2>Building and exploring the analysis dataset</h2>
+<p>
+We assembled a reproducible dataset from three public sources and explored it before any modeling. The code lives in the repository (<code>src/prepare_and_eda.py</code> and the cleaning notebook); the numbers below are produced directly by that pipeline, not entered by hand.
+</p>
+
+<h3>Data sources and provenance</h3>
+<p>
+Colorado EV registrations come from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level). A full provenance table — source, URL, license, geography, time coverage, raw size, and unit of observation — is in <code>docs/provenance.csv</code>, and every analysis column is defined in <code>docs/data_dictionary.csv</code>.
+</p>
+
+<h3>Dataset and cleaning decisions</h3>
+<p>
+The analysis table has <strong>one row per matched five-digit ZIP/ZCTA code</strong>. USPS ZIPs and Census ZCTAs are not identical, so this code match is an exploratory proxy, <em>not</em> a point-in-polygon spatial join — unmatched codes are kept visible, never dropped. We applied Atlas's latest-snapshot flag and summed <code>Vehicle Count</code> (not row counts), filtered AFDC to public + existing + electric Colorado stations deduplicated by ID, and treated absent registration/station rows as <strong>missing, not zero</strong>. Scope is all vehicle classes (215,105 EVs); the light-duty subtotal (202,639) is reported only as a diagnostic.
+</p>
+
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Step</th><th>Before</th><th>After</th><th>Reason</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>Atlas registration rows</td>
+<td>5,970,397</td>
+<td>161,053</td>
+<td>Keep latest DMV snapshot only (file stacks monthly snapshots back to 2010), Colorado, valid ZIP and count. 0 invalid ZIP, 0 invalid/negative counts; aggregates to 1,150 ZIP codes and 215,105 vehicles.</td>
+</tr>
+<tr>
+<td>AFDC station rows</td>
+<td>3,169</td>
+<td>2,910</td>
+<td>Public, existing, electric, Colorado; deduplicated by station ID and filtered to valid 5-digit ZIP. 0 duplicate IDs, 0 invalid ZIPs.</td>
+</tr>
+<tr>
+<td>Geographic join</td>
+<td>1,150 EV + 2,910 station ZIPs</td>
+<td>1,161 union codes</td>
+<td>5-digit ZIP matched to Census ZCTA; 20 codes had no ACS match (12 EV ZIPs, 11 station ZIPs). All preserved, none dropped.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3>Five exploratory charts</h3>
+<p>Each chart excludes rows with missing denominators and quotes its own sample size.</p>
+
+<figure class="context-figure">
+<div class="visual-title">1 · EV adoption rate distribution</div>
+<img src="figures/01_ev_rate_distribution.png" alt="Histogram of registered EVs per 1,000 households across 1,129 ZIP/ZCTA codes, strongly right-skewed with most codes near zero and a long tail of higher-adoption codes." />
+<figcaption>
+<strong>n = 1,129 codes.</strong> The distribution is strongly right-skewed: the median is about <strong>0.61 registered EVs per 1,000 households</strong> while the mean is roughly 30, so a few high-adoption ZIP codes pull the average far above the typical area and most codes have only one or two registered EVs. We report the median and flag extremes for review rather than averaging. <em>Caveat:</em> codes with missing household denominators are excluded.
+</figcaption>
+</figure>
+
+<figure class="context-figure">
+<div class="visual-title">2 · Income vs EV adoption</div>
+<img src="figures/02_income_vs_ev.png" alt="Scatter plot of median household income against EVs per 1,000 households for 1,097 codes, showing a weak upward trend." />
+<figcaption>
+<strong>n = 1,097 codes · Pearson r = 0.24.</strong> A weak positive association: higher-income codes tend toward somewhat higher adoption, but income explains only a small share of the variation. <em>Caveat:</em> association is not causal.
+</figcaption>
+</figure>
+
+<figure class="context-figure">
+<div class="visual-title">3 · Public charging supply vs adoption</div>
+<img src="figures/03_supply_vs_adoption.png" alt="Scatter plot of public charging ports per 1,000 households against EVs per 1,000 households for 280 codes, showing no clear relationship." />
+<figcaption>
+<strong>n = 280 codes · Pearson r = 0.01.</strong> Essentially no linear relationship between public port supply per household and adoption per household. <em>Caveat:</em> port counts are not usage, and only about a quarter of codes have a matched AFDC station.
+</figcaption>
+</figure>
+
+<figure class="context-figure">
+<div class="visual-title">4 · Renter share vs public charging supply</div>
+<img src="figures/04_renter_vs_ports.png" alt="Scatter plot of renter-occupied share against public ports per 1,000 households for 283 codes, showing a weak upward trend." />
+<figcaption>
+<strong>n = 283 codes · Pearson r = 0.16.</strong> A weak positive association: codes with more renters show slightly more public port supply, consistent with public charging partly substituting for home charging. <em>Caveat:</em> renter share is a community aggregate.
+</figcaption>
+</figure>
+
+<figure class="context-figure">
+<div class="visual-title">5 · Join completeness and missingness</div>
+<img src="figures/05_missingness.png" alt="Horizontal bar chart of the percentage of codes missing each field after joining, showing low missingness for EV and demographic fields and about 75 percent missing for station and port fields." />
+<figcaption>
+EV and demographic coverage is high (EV count missing for ~1% of codes, households ~2%), but charging-supply coverage is sparse: <strong>about 75% of analysis codes have no matched AFDC station</strong>, so station and port fields are mostly missing. This is a coverage gap, not demonstrated zero infrastructure — absent codes are not true zeros. <em>Caveat:</em> unmatched ZIPs and absent stations need independent interpretation before any "underserved" claim.
+</figcaption>
+</figure>
+
+<h3>What the exploration changes about the questions</h3>
+<p>
+EDA confirms RQ1 is answerable now (income and renter-share relationships are measurable, if weak) and that RQ2 is tractable from the per-household rates we built. It also sharpens two cautions for later work:
+</p>
+<ul class="clean-list">
+<li><strong>RQ2 (adoption vs supply):</strong> the ~75% station-coverage gap means an "underserved" comparison must distinguish genuinely zero supply from unmatched/absent data.</li>
+<li><strong>RQ3 (urban vs rural):</strong> left open — a defensible answer needs a formal Census urban-area classification, not ZIP prefixes, so we do not answer it from this proxy join.</li>
+<li><strong>RQ4 (priority areas):</strong> still the intended final output; the per-household demand and supply rates are the inputs it will combine.</li>
+</ul>
+
+<h3>Limitations and ethics</h3>
+<p>
+Key constraints carried forward: a ZIP↔ZCTA proxy join (not exact geometry), a temporal mismatch between 2020–2024 ACS estimates and 2026 EV/station snapshots, missing-is-not-zero handling, and charging-station status that reflects a source snapshot rather than live availability. We publish only aggregates — no VINs, residential addresses, or private utility capacity data. The full list is in <code>docs/limitations.md</code>.
+</p>
+<p class="note">
+Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/fetch_acs.py</code> and <code>python src/prepare_and_eda.py</code> regenerate this dataset and all five charts. See the repository <code>README.md</code>.
+</p>
+</div>
+</section>
+
 <section id="background" class="section">
 <div class="container narrow">
 <p class="section-kicker">Background / Related Work</p>
@@ -430,7 +540,7 @@ that apply to real-world problems. He is especially interested in applying data 
 
 <footer>
 <div class="container footer-inner">
-<span>CSCI 5502 · Semester Group Project · Milestone 1</span>
+<span>CSCI 5502 · Semester Group Project · Milestone 2</span>
 <span>Eddie Strand · Snehal Bhatnagar · Abdullah Bharde</span>
 </div>
 </footer>
