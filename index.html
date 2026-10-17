@@ -12,14 +12,14 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <!-- Added: styles for the zoomed team photo + new chart/map section (kept separate from styles.css so nothing existing is overwritten) -->
 <style>
-  .team-photo-clip{display:block;width:192px;height:192px;overflow:hidden;margin:0 auto;border-radius:inherit;}
-  .team-photo-clip .team-photo{width:100%;height:100%;}
-  .viz-grid{display:grid;grid-template-columns:1fr;gap:1.75rem;margin-top:1.5rem;}
-  @media (min-width:800px){ .viz-grid{grid-template-columns:1fr 1fr;} }
-  .viz-card svg{display:block;max-width:100%;height:auto;margin:0.5rem auto 0;}
-  .chart-legend{list-style:none;padding:0;margin:0.85rem 0 0;display:flex;flex-direction:column;gap:0.4rem;font-size:0.92rem;}
-  .chart-legend li{display:flex;align-items:center;gap:0.55rem;}
-  .chart-legend .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;flex:0 0 auto;}
+ .team-photo-clip{display:block;width:192px;height:192px;overflow:hidden;margin:0 auto;border-radius:inherit;}
+ .team-photo-clip .team-photo{width:100%;height:100%;}
+ .viz-grid{display:grid;grid-template-columns:1fr;gap:1.75rem;margin-top:1.5rem;}
+ @media (min-width:800px){ .viz-grid{grid-template-columns:1fr 1fr;} }
+ .viz-card svg{display:block;max-width:100%;height:auto;margin:0.5rem auto 0;}
+ .chart-legend{list-style:none;padding:0;margin:0.85rem 0 0;display:flex;flex-direction:column;gap:0.4rem;font-size:0.92rem;}
+ .chart-legend li{display:flex;align-items:center;gap:0.55rem;}
+ .chart-legend .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;flex:0 0 auto;}
 </style>
 </head>
 <body>
@@ -48,7 +48,7 @@
 <p class="eyebrow">CSCI 5502 · Data Mining · Milestone 2</p>
 <h1>Colorado EV Charging Access &amp; Adoption</h1>
 <p class="hero-text">
-Investigating where Colorado’s public EV charging network aligns with current demand — and where gaps may remain for lower-income, renter-heavy, and rural communities.
+Investigating where Colorado’s public EV charging network aligns with current demand and where gaps may remain for lower-income, renter-heavy, and rural communities.
 </p>
 <div class="hero-actions">
 <a class="button primary" href="#questions">View Research Questions</a>
@@ -117,9 +117,9 @@ Residential chargers are excluded. Totals can change as AFDC updates the Station
 <text x="100" y="115" text-anchor="middle" font-size="10" fill="#475569">public ports</text>
 </svg>
 <ul class="chart-legend">
-<li><span class="swatch" style="background:#2563eb"></span> Level 2 — 6,041 (77.8%)</li>
-<li><span class="swatch" style="background:#16a34a"></span> DC fast — 1,667 (21.5%)</li>
-<li><span class="swatch" style="background:#f59e0b"></span> Level 1 — 55 (0.7%)</li>
+<li><span class="swatch" style="background:#2563eb"></span> Level 2 6,041 (77.8%)</li>
+<li><span class="swatch" style="background:#16a34a"></span> DC fast 1,667 (21.5%)</li>
+<li><span class="swatch" style="background:#f59e0b"></span> Level 1 55 (0.7%)</li>
 </ul>
 <figcaption>Same AFDC counts as the bar chart above, shown as a share of the statewide total. Team-created chart, not an official DOE figure.</figcaption>
 </figure>
@@ -155,7 +155,7 @@ Residential chargers are excluded. Totals can change as AFDC updates the Station
 <div class="visual-title">Current EV charging infrastructure across Colorado</div>
 <img src="figures/co-ev-charging-map.png" alt="Map of Colorado showing hundreds of current public EV charging locations as green pin markers, heavily concentrated along the Front Range corridor from Fort Collins through Denver to Colorado Springs and Pueblo, with sparser coverage across the Western Slope, mountain towns, and Eastern Plains." style="width:100%;height:auto;border-radius:0.5rem;border:1px solid #e2e8f0;" />
 <figcaption>
-Snapshot of existing public charging locations statewide, mapped by the team from current station data. Coverage is dense along the I-25 Front Range corridor and thins out toward rural and mountain areas — the pattern RQ3/RQ4 investigate further.
+Snapshot of existing public charging locations statewide, mapped by the team from current station data. Coverage is dense along the I-25 Front Range corridor and thins out toward rural and mountain areas the pattern RQ3/RQ4 investigate further.
 </figcaption>
 </figure>
 
@@ -194,7 +194,7 @@ The unanswered question for this project is more local: <strong>which Colorado a
 <li>Standardize records to a common geographic level and record join limitations (ZIP vs. ZCTA, snapshot dates).</li>
 <li>Describe how EV adoption relates to income, housing, and urban/rural setting, and how charger availability compares.</li>
 <li>Identify areas that appear underserved relative to current or expected demand, with an equity-aware priority view.</li>
-<li>Communicate results with maps and a transparent scoring framework — not a black-box ranking.</li>
+<li>Communicate results with maps and a transparent scoring framework not a black-box ranking.</li>
 </ol>
 </div>
 </section>
@@ -254,12 +254,12 @@ We assembled a reproducible dataset from three public sources and explored it be
 
 <h3>Data sources and provenance</h3>
 <p>
-Colorado EV registrations come from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level). A full provenance table — source, URL, license, geography, time coverage, raw size, and unit of observation — is in <code>docs/provenance.csv</code>, and every analysis column is defined in <code>docs/data_dictionary.csv</code>.
+Colorado EV registrations come from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level). A full provenance table source, URL, license, geography, time coverage, raw size, and unit of observation is in <code>docs/provenance.csv</code>, and every analysis column is defined in <code>docs/data_dictionary.csv</code>.
 </p>
 
 <h3>Dataset and cleaning decisions</h3>
 <p>
-The analysis table has <strong>one row per matched five-digit ZIP/ZCTA code</strong>. USPS ZIPs and Census ZCTAs are not identical, so this code match is an exploratory proxy, <em>not</em> a point-in-polygon spatial join — unmatched codes are kept visible, never dropped. We applied Atlas's latest-snapshot flag and summed <code>Vehicle Count</code> (not row counts), filtered AFDC to public + existing + electric Colorado stations deduplicated by ID, and treated absent registration/station rows as <strong>missing, not zero</strong>. Scope is all vehicle classes (215,105 EVs); the light-duty subtotal (202,639) is reported only as a diagnostic.
+The analysis table has <strong>one row per matched five-digit ZIP/ZCTA code</strong>. USPS ZIPs and Census ZCTAs are not identical, so this code match is an exploratory proxy, <em>not</em> a point-in-polygon spatial join, unmatched codes are kept visible, never dropped. We applied Atlas's latest-snapshot flag and summed <code>Vehicle Count</code> (not row counts), filtered AFDC to public + existing + electric Colorado stations deduplicated by ID, and treated absent registration/station rows as <strong>missing, not zero</strong>. Scope is all vehicle classes (215,105 EVs); the light-duty subtotal (202,639) is reported only as a diagnostic.
 </p>
 
 <div class="table-wrap">
@@ -272,7 +272,7 @@ The analysis table has <strong>one row per matched five-digit ZIP/ZCTA code</str
 <td>Atlas registration rows</td>
 <td>5,970,397</td>
 <td>161,053</td>
-<td>Keep latest DMV snapshot only (file stacks monthly snapshots back to 2010), Colorado, valid ZIP and count. 0 invalid ZIP, 0 invalid/negative counts; aggregates to 1,150 ZIP codes and 215,105 vehicles.</td>
+<td>The file stacks ~90 complete monthly DMV snapshots back to 2010, so the same vehicles repeat once per snapshot; summing them would massively double-count. Keeping only the latest snapshot (2026-07-07) removes that 5.8M-row redundancy — not bad data (0 invalid ZIP, 0 invalid/negative counts). The 161,053 remaining rows are (ZIP × make/model/year/drivetrain/class) groups whose Vehicle Count sums to 215,105 vehicles across 1,150 ZIP codes.</td>
 </tr>
 <tr>
 <td>AFDC station rows</td>
@@ -329,7 +329,7 @@ The analysis table has <strong>one row per matched five-digit ZIP/ZCTA code</str
 <div class="visual-title">5 · Join completeness and missingness</div>
 <img src="figures/05_missingness.png" alt="Horizontal bar chart of the percentage of codes missing each field after joining, showing low missingness for EV and demographic fields and about 75 percent missing for station and port fields." />
 <figcaption>
-EV and demographic coverage is high (EV count missing for ~1% of codes, households ~2%), but charging-supply coverage is sparse: <strong>about 75% of analysis codes have no matched AFDC station</strong>, so station and port fields are mostly missing. This is a coverage gap, not demonstrated zero infrastructure — absent codes are not true zeros. <em>Caveat:</em> unmatched ZIPs and absent stations need independent interpretation before any "underserved" claim.
+EV and demographic coverage is high (EV count missing for ~1% of codes, households ~2%), but charging-supply coverage is sparse: <strong>about 75% of analysis codes have no matched AFDC station</strong>, so station and port fields are mostly missing. This is a coverage gap, not demonstrated zero infrastructure absent codes are not true zeros. <em>Caveat:</em> unmatched ZIPs and absent stations need independent interpretation before any "underserved" claim.
 </figcaption>
 </figure>
 
@@ -339,13 +339,13 @@ EDA confirms RQ1 is answerable now (income and renter-share relationships are me
 </p>
 <ul class="clean-list">
 <li><strong>RQ2 (adoption vs supply):</strong> the ~75% station-coverage gap means an "underserved" comparison must distinguish genuinely zero supply from unmatched/absent data.</li>
-<li><strong>RQ3 (urban vs rural):</strong> left open — a defensible answer needs a formal Census urban-area classification, not ZIP prefixes, so we do not answer it from this proxy join.</li>
+<li><strong>RQ3 (urban vs rural):</strong> left open a defensible answer needs a formal Census urban-area classification, not ZIP prefixes, so we do not answer it from this proxy join.</li>
 <li><strong>RQ4 (priority areas):</strong> still the intended final output; the per-household demand and supply rates are the inputs it will combine.</li>
 </ul>
 
 <h3>Limitations and ethics</h3>
 <p>
-Key constraints carried forward: a ZIP↔ZCTA proxy join (not exact geometry), a temporal mismatch between 2020–2024 ACS estimates and 2026 EV/station snapshots, missing-is-not-zero handling, and charging-station status that reflects a source snapshot rather than live availability. We publish only aggregates — no VINs, residential addresses, or private utility capacity data. The full list is in <code>docs/limitations.md</code>.
+Key constraints carried forward: a ZIP↔ZCTA proxy join (not exact geometry), a temporal mismatch between 2020–2024 ACS estimates and 2026 EV/station snapshots, missing-is-not-zero handling, and charging-station status that reflects a source snapshot rather than live availability. We publish only aggregates no VINs, residential addresses, or private utility capacity data. The full list is in <code>docs/limitations.md</code>.
 </p>
 <p class="note">
 Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/fetch_acs.py</code> and <code>python src/prepare_and_eda.py</code> regenerate this dataset and all five charts. See the repository <code>README.md</code>.
@@ -450,7 +450,7 @@ The core problem, goal, and charging/EV sources are unchanged. We added <strong>
 </div>
 <h3>Major constraints (from Milestone 0)</h3>
 <div class="cards two">
-<article class="card"><h4>Equity bias</h4><p>Existing EV ownership may already reflect income inequality. Mitigation: include income, renter share, and charger access in an equity-aware priority view — not demand alone.</p></article>
+<article class="card"><h4>Equity bias</h4><p>Existing EV ownership may already reflect income inequality. Mitigation: include income, renter share, and charger access in an equity-aware priority view not demand alone.</p></article>
 <article class="card"><h4>Demand proxy</h4><p>Registration location is not where a vehicle is charged. Treat registrations as residential demand estimates and combine them with charger and population data.</p></article>
 <article class="card"><h4>Usage coverage</h4><p>EValuateCO covers only selected funded stations and may not represent statewide behavior.</p></article>
 <article class="card"><h4>Temporal mismatch</h4><p>Datasets may represent different years or update schedules. Snapshot dates will be recorded during data prep.</p></article>
@@ -488,21 +488,21 @@ that apply to real-world problems. He is especially interested in applying data 
 </div>
 </article>
 
-          <article class="team-card">
-            <img class="team-photo" src="team/abdullah-bharde.jpg" alt="Headshot of Abdullah Bharde" width="192" height="192" />
-            <h3>Abdullah Bharde</h3>
-            <p class="muted">M.S. Data Science student, University of Colorado Boulder</p>
-            <p>Computer Engineering graduate (University of Mumbai) and former SDE-1 at Lepton Software, where he worked on backend APIs, ETL pipelines, and location-intelligence / spatial data systems. Interested in applied data science, data engineering, and geospatial analysis for infrastructure and decision-making problems.</p>
-            <p><strong>Initial responsibilities:</strong> geospatial joins and mapping support, data pipelines / reproducibility, analysis as the project moves beyond framing. Overlap expected.</p>
-            <div class="team-links">
-              <a href="https://github.com/Abdul-16" target="_blank" rel="noopener">GitHub</a>
-              <a href="https://www.linkedin.com/in/abdullah-bharde-955ba6222/" target="_blank" rel="noopener">LinkedIn</a>
-            </div>
-          </article>
-        </div>
-        <p class="note">Roles may overlap and may change. Coordination, data, analysis, visualization, documentation, and reproducibility are all in scope for the group.</p>
+     <article class="team-card">
+      <img class="team-photo" src="team/abdullah-bharde.jpg" alt="Headshot of Abdullah Bharde" width="192" height="192" />
+      <h3>Abdullah Bharde</h3>
+      <p class="muted">M.S. Data Science student, University of Colorado Boulder</p>
+      <p>Computer Engineering graduate (University of Mumbai) and former SDE-1 at Lepton Software, where he worked on backend APIs, ETL pipelines, and location-intelligence / spatial data systems. Interested in applied data science, data engineering, and geospatial analysis for infrastructure and decision-making problems.</p>
+      <p><strong>Initial responsibilities:</strong> geospatial joins and mapping support, data pipelines / reproducibility, analysis as the project moves beyond framing. Overlap expected.</p>
+      <div class="team-links">
+       <a href="https://github.com/Abdul-16" target="_blank" rel="noopener">GitHub</a>
+       <a href="https://www.linkedin.com/in/abdullah-bharde-955ba6222/" target="_blank" rel="noopener">LinkedIn</a>
       </div>
-    </section>
+     </article>
+    </div>
+    <p class="note">Roles may overlap and may change. Coordination, data, analysis, visualization, documentation, and reproducibility are all in scope for the group.</p>
+   </div>
+  </section>
 
 <section id="repo" class="section alt">
 <div class="container narrow">

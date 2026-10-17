@@ -12,7 +12,7 @@ The main table is joined by matching five-digit ZIP/ZCTA codes, with **one row p
 
 | Step | Before | After | Reason |
 |---|---:|---:|---|
-| Atlas rows | 5,970,397 | 161,053 | Latest snapshot, Colorado, valid ZIP/count (0 invalid ZIP, 0 invalid/negative count); aggregated to 1,150 ZIP codes |
+| Atlas rows | 5,970,397 | 161,053 | The file stacks ~90 complete monthly DMV snapshots back to 2010, so the same vehicles repeat once per snapshot; summing them would massively double-count. Keeping only the latest snapshot (2026-07-07) removes that 5.8M-row redundancy, not bad data (0 invalid ZIP, 0 invalid/negative count). The 161,053 rows are ZIP × make/model/year/drivetrain/class groups whose Vehicle Count sums to 215,105 vehicles across 1,150 ZIP codes. |
 | AFDC rows | 3,169 | 2,910 | Public, existing, electric, Colorado, unique ID; filtered to valid 5-digit ZIP (0 duplicate IDs, 0 invalid ZIPs) |
 | Geographic join | 1,150 EV + 2,910 station ZIPs | 1,161 union codes | 5-digit ZIP matched to ZCTA; 20 codes unmatched to ACS (12 EV ZIPs, 11 station ZIPs without ACS match), all preserved, none dropped |
 
