@@ -1,0 +1,24 @@
+variable,type,units_or_categories,meaning,source,notes
+zcta,string,5-digit code,Five digit join code,Atlas/AFDC/ACS,USPS ZIP matched to Census ZCTA proxy
+bev_count,float,vehicles,Battery electric registration count,Atlas latest snapshot,weighted by Vehicle Count
+phev_count,float,vehicles,Plug-in hybrid registration count,Atlas latest snapshot,weighted by Vehicle Count
+ev_count,float,vehicles,Total registrations by matching code,Atlas latest snapshot,weighted by Vehicle Count
+station_count,float,station locations,Count of existing public EV stations,AFDC,source snapshot not utilization
+l1_ports,float,charging ports,Level 1 ports reported by stations,AFDC,blank-port assumption in README
+l2_ports,float,charging ports,Level 2 ports reported by stations,AFDC,blank-port assumption in README
+dcfc_ports,float,charging ports,DC fast ports reported by stations,AFDC,blank-port assumption in README
+population,float,persons,Population estimate,ACS 2024 5-year B01003_001E,national ZCTA file filtered via matching codes
+households,float,occupied housing units,Total occupied housing units,ACS 2024 5-year B25003_001E,zero denominator yields missing rates
+renter_households,float,occupied housing units,Occupied units rented,ACS 2024 5-year B25003_003E,do not confuse with rental units vacant
+median_income,float,USD per year,Median household income,ACS 2024 5-year B19013_001E,negative Census sentinel values treated missing
+renter_share,float,ratio 0-1,Rented units over occupied units,derived ACS,missing if no occupied units
+ev_per_1000_households,float,vehicles per 1000 households,EV registrations normalized by occupied housing units,derived Atlas plus ACS,descriptive indicator
+ports_per_1000_households,float,ports per 1000 households,Reported public ports normalized by occupied housing units,derived AFDC plus ACS,only complete port summaries shown
+l1_ports_partial,boolean,True/False,Level 1 port sum for this code is incomplete (some stations missing a port count),derived AFDC,flag; incomplete sums excluded from known_ports
+l2_ports_partial,boolean,True/False,Level 2 port sum for this code is incomplete,derived AFDC,flag; incomplete sums excluded from known_ports
+dcfc_ports_partial,boolean,True/False,DC fast port sum for this code is incomplete,derived AFDC,flag; incomplete sums excluded from known_ports
+known_ports,float,charging ports,Total public ports where the port summary is complete,derived AFDC,missing when any port type for the code is partial
+acs_join,categorical,both/left_only/right_only,Merge indicator for the ACS join,derived join,left_only means EV/station code had no ACS match
+matched_acs,boolean,True/False,Whether the code matched an ACS ZCTA record,derived join,unmatched codes preserved not dropped
+ev_data_present,boolean,True/False,Whether Atlas EV registrations exist for this code,derived join,absence is not a demonstrated zero
+afdc_data_present,boolean,True/False,Whether an AFDC public station exists for this code,derived join,absence is not a demonstrated zero

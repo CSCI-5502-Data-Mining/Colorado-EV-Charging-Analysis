@@ -27,9 +27,38 @@ Approved Milestone 0 question: *What factors are associated with EV adoption in 
 - U.S. DOE Alternative Fuels Data Center — [Data downloads](https://afdc.energy.gov/data_download)
 - Atlas Public Policy / Colorado Energy Office — [EValuateCO](https://atlaspolicy.com/evaluateco/)
 - Colorado Information Marketplace — [Charging station map](https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7)
-- U.S. Census Bureau ACS 5-year estimates — added after Milestone 0 for income/housing context; exact tables still TBD — [ACS 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html)
+- U.S. Census Bureau ACS 5-year estimates — added after Milestone 0 for income/housing context; tables used: `B01003_001E` (population), `B19013_001E` (median household income), `B25003_001E` (occupied households), `B25003_003E` (renter-occupied) — [ACS 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html)
 
 Acquisition instructions: [`data/README.md`](data/README.md). Do not commit secrets, credentials, or restricted raw extracts.
+
+## Reproduce the Milestone 2 analysis
+
+Raw data files are **not** in the repository (large / licensed). Follow [`data/README.md`](data/README.md) to place them in `data/raw/`, then:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+# 1. Fetch Census ACS ZCTA estimates (free API key required)
+export CENSUS_API_KEY="YOUR_KEY" # Windows PowerShell: $env:CENSUS_API_KEY="YOUR_KEY"
+python src/fetch_acs.py
+
+# 2. Clean, join, and generate the processed dataset + five EDA charts
+python src/prepare_and_eda.py
+
+# 3. (optional) run the offline cleaning-rule tests
+python -m unittest discover -s tests
+```
+
+Outputs (regenerated, not committed as raw data):
+- `data/processed/colorado_ev_zcta_clean.csv` — analysis-ready, one row per matched code
+- `data/processed/{quality_report,eda_metrics}.json`, `join_audit.csv`, `outlier_review.csv`
+- `figures/01_ev_rate_distribution.png` … `figures/05_missingness.png`
+
+The narrative walkthrough (acquisition → cleaning → join → EDA, with inline charts and interpretations) is in [`notebooks/cleaning_and_preprocessing.ipynb`](notebooks/cleaning_and_preprocessing.ipynb). Documentation of provenance, the data dictionary, and limitations is in [`docs/`](docs/). All paths resolve relative to the repository root, so no machine-specific absolute paths are needed.
+
+**Scope:** the analysis counts all vehicle classes (215,105 EVs in the 2026-07-07 snapshot), summing `Vehicle Count`. The light-duty subtotal (202,639) is reported as a diagnostic only.
 
 ## Repository structure
 
@@ -38,11 +67,13 @@ Acquisition instructions: [`data/README.md`](data/README.md). Do not commit secr
 ├── index.html          # project website
 ├── styles.css
 ├── script.js
-├── data/               # instructions + optional non-sensitive sample
-├── notebooks/
-├── src/
-├── figures/
-├── docs/
+├── requirements.txt    # Python dependencies
+├── data/               # acquisition instructions + processed outputs (raw gitignored)
+├── notebooks/          # cleaning_and_preprocessing.ipynb (narrative)
+├── src/                # fetch_acs.py, prepare_and_eda.py (reproducible pipeline)
+├── tests/              # offline cleaning-rule checks
+├── figures/            # five EDA charts
+├── docs/               # provenance, data dictionary, limitations, website section
 ├── references/
 └── team/               # team photos for the website
 ```

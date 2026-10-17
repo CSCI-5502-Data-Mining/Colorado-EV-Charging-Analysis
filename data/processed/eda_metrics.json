@@ -1,0 +1,16 @@
+{
+  "n_zcta_codes": 1161,
+  "median_ev_per_1000_households": 0.61,
+  "income_vs_ev": {
+    "n": 1097,
+    "pearson_r": 0.244
+  },
+  "supply_vs_adoption": {
+    "n": 280,
+    "pearson_r": 0.013
+  },
+  "renter_vs_ports": {
+    "n": 283,
+    "pearson_r": 0.157
+  }
+}
