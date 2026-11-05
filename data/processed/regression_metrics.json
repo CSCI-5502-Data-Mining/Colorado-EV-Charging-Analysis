@@ -1,0 +1,177 @@
+{
+  "generated_utc": "2026-11-05T20:20:06.060782+00:00",
+  "input": "data/processed/modeling_colorado.csv",
+  "target": "ev_per_1000_households",
+  "features": [
+    "median_income",
+    "renter_share",
+    "population",
+    "households"
+  ],
+  "excluded_leakage_columns": [
+    "ev_count",
+    "bev_count",
+    "phev_count"
+  ],
+  "seed": 42,
+  "cv_splits": 5,
+  "validation": "Held-out ZIP3 groups reserved first; GroupKFold by ZIP3 is primary, random KFold reported for contrast; preprocessing + tuning fit on training folds only.",
+  "validation_note": "Colorado has only ~17 ZIP3 groups, so a single held-out grouped test slice is high-variance; the grouped-CV out-of-fold metrics (every training row scored once while held out) are the primary, more stable estimate. The test split is a confirmatory check that tuning did not overfit.",
+  "n_cohort": 418,
+  "n_train": 329,
+  "n_test": 89,
+  "n_test_groups": 4,
+  "n_train_groups": 13,
+  "results": {
+    "baseline_mean": {
+      "grouped_cv": {
+        "MAE": 49.094,
+        "RMSE": 64.316,
+        "R2": -0.052
+      },
+      "random_cv": {
+        "MAE": 47.988,
+        "RMSE": 62.943,
+        "R2": -0.008
+      },
+      "test": {
+        "MAE": 41.573,
+        "RMSE": 45.864,
+        "R2": -0.522
+      }
+    },
+    "baseline_income_only": {
+      "grouped_cv": {
+        "MAE": 27.873,
+        "RMSE": 41.683,
+        "R2": 0.558
+      },
+      "random_cv": {
+        "MAE": 27.508,
+        "RMSE": 40.807,
+        "R2": 0.576
+      },
+      "test": {
+        "MAE": 29.966,
+        "RMSE": 44.899,
+        "R2": -0.458
+      }
+    },
+    "ridge": {
+      "grouped_cv": {
+        "MAE": 27.683,
+        "RMSE": 40.265,
+        "R2": 0.588
+      },
+      "random_cv": {
+        "MAE": 27.138,
+        "RMSE": 39.46,
+        "R2": 0.604
+      },
+      "test": {
+        "MAE": 28.216,
+        "RMSE": 40.53,
+        "R2": -0.188
+      },
+      "best_params": {
+        "model__alpha": 10.0
+      },
+      "search": "GridSearchCV over ZIP3 GroupKFold (neg MAE)"
+    },
+    "random_forest": {
+      "grouped_cv": {
+        "MAE": 25.82,
+        "RMSE": 37.79,
+        "R2": 0.637
+      },
+      "random_cv": {
+        "MAE": 24.752,
+        "RMSE": 37.199,
+        "R2": 0.648
+      },
+      "test": {
+        "MAE": 21.481,
+        "RMSE": 30.432,
+        "R2": 0.33
+      },
+      "best_params": {
+        "model__max_depth": null,
+        "model__min_samples_leaf": 5,
+        "model__n_estimators": 200
+      },
+      "search": "GridSearchCV over ZIP3 GroupKFold (neg MAE)"
+    }
+  },
+  "winsorization_sensitivity": {
+    "train_cap_value_p99": 299.578,
+    "note": "Cap learned from TRAIN target 99th pct only; models fit on capped train but scored against ORIGINAL uncapped test target.",
+    "uncapped_baseline_test": {
+      "ridge": {
+        "MAE": 28.216,
+        "RMSE": 40.53,
+        "R2": -0.188
+      },
+      "random_forest": {
+        "MAE": 21.481,
+        "RMSE": 30.432,
+        "R2": 0.33
+      }
+    },
+    "capped_train_test": {
+      "ridge": {
+        "MAE": 28.122,
+        "RMSE": 40.393,
+        "R2": -0.18
+      },
+      "random_forest": {
+        "MAE": 21.411,
+        "RMSE": 30.325,
+        "R2": 0.335
+      }
+    }
+  },
+  "ridge_coefficients": {
+    "median_income": 45.182,
+    "renter_share": 3.908,
+    "population": 6.636,
+    "households": 2.444
+  },
+  "rf_feature_importance": {
+    "median_income": 0.806,
+    "renter_share": 0.065,
+    "population": 0.055,
+    "households": 0.075
+  },
+  "rf_permutation_importance_test": {
+    "median_income": 14.116,
+    "renter_share": 1.612,
+    "population": -0.244,
+    "households": 0.838
+  },
+  "subgroup_mae_rf_test": {
+    "lower_income": {
+      "n": 52,
+      "MAE": 13.877
+    },
+    "higher_income": {
+      "n": 37,
+      "MAE": 32.168
+    },
+    "renter_heavy": {
+      "n": 36,
+      "MAE": 18.65
+    },
+    "owner_heavy": {
+      "n": 53,
+      "MAE": 23.404
+    },
+    "smaller_zcta": {
+      "n": 67,
+      "MAE": 19.952
+    },
+    "larger_zcta": {
+      "n": 22,
+      "MAE": 26.138
+    }
+  }
+}

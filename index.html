@@ -32,6 +32,7 @@
 <a href="#intro">Introduction</a>
 <a href="#questions">Research Questions</a>
 <a href="#data">Data &amp; Exploration</a>
+<a href="#models">Models &amp; Evaluation</a>
 <a href="#background">Background</a>
 <a href="#proposal">Proposal</a>
 <a href="#team">Team</a>
@@ -349,6 +350,117 @@ Key constraints carried forward: a ZIP↔ZCTA proxy join (not exact geometry), a
 </p>
 <p class="note">
 Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/fetch_acs.py</code> and <code>python src/prepare_and_eda.py</code> regenerate this dataset and all five charts. See the repository <code>README.md</code>.
+</p>
+</div>
+</section>
+
+<section id="models" class="section">
+<div class="container narrow">
+<p class="section-kicker">Milestone 3 · Models &amp; Evaluation</p>
+<h2>Modeling EV adoption and surfacing underserved areas</h2>
+<p>
+We apply two complementary data-mining tasks to the Milestone 2 analysis table, scoped to Colorado ZCTA codes. <strong>Regression</strong> asks how far community socioeconomics explain EV adoption (RQ1); <strong>K-Means clustering</strong> groups communities into profiles and screens for areas with demonstrated demand but thin public charging supply (RQ4). All numbers below come directly from the reproducible scripts (<code>src/prepare_modeling.py</code>, <code>src/train_regression.py</code>, <code>src/cluster_communities.py</code>), not hand entry.
+</p>
+
+<h3>Modeling plan and why these methods</h3>
+<p>
+The target is <strong>EV adoption rate</strong> = registered EVs per 1,000 households (<code>ev_per_1000_households</code>). Predictors are median household income, renter share, population, and household count. We deliberately exclude <code>ev_count</code>, <code>bev_count</code>, and <code>phev_count</code> because the target is derived from them — using any as a feature would be target leakage. Regression fits because the outcome is a continuous per-household rate with a handful of plausible socioeconomic drivers; clustering fits because the "underserved" question is descriptive, not predictive, and benefits from grouping similar communities.
+</p>
+
+<h3>Modeling data preparation</h3>
+<p>
+From the 1,161-code union we keep the <strong>500 Colorado codes</strong> (80/81 prefix — a working definition, since ZIP ≠ ZCTA) and drop 661 out-of-state registration-ZIP artifacts. We then <strong>audit charging supply before recoding</strong>: a Colorado code present in the registrations but absent from the AFDC station file means AFDC lists no public, existing, electric station there. Because the join is a direct same-normalization 5-digit match and AFDC is a directory of existing stations, those 207 codes are recoded to <strong>verified zero supply</strong> (station_count = 0, ports = 0) rather than treated as missing — otherwise we would discard the very communities the project aims to find. A station that matched but reported blank port counts stays missing (0 such cases here). A <code>households ≥ 100</code> floor removes four tiny-denominator codes whose rates are unstable (e.g. one code with 17 households), leaving <strong>418 codes</strong> for the primary regression.
+</p>
+
+<h3>Validation strategy (leakage-safe)</h3>
+<p>
+A held-out <strong>test set of whole ZIP3 groups</strong> is reserved first, so no geographic group spans train and test. On the training portion we use <strong>GroupKFold by ZIP3</strong> (keeping neighboring codes together) as the primary estimate, with a plain random split reported for contrast. Imputation, scaling, and hyperparameter tuning run <em>inside</em> the training folds only. Colorado has just ~17 ZIP3 groups, so a single held-out grouped slice is high-variance; the grouped cross-validation (every training code scored once while held out) is the more stable headline, and the test split is a confirmatory check. We report <strong>MAE</strong> (typical error in EVs per 1,000 households), <strong>RMSE</strong> (penalizes large misses), and <strong>R²</strong> (share of variation explained).
+</p>
+
+<h3>Comparison: baseline vs. candidate models</h3>
+<p>Grouped cross-validation on the training set, same protocol for every approach (lower MAE/RMSE and higher R² are better):</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Approach</th><th>Role</th><th>MAE</th><th>RMSE</th><th>R²</th></tr>
+</thead>
+<tbody>
+<tr><td>Mean predictor</td><td>Baseline 1</td><td>49.1</td><td>64.3</td><td>−0.05</td></tr>
+<tr><td>Income-only linear</td><td>Baseline 2</td><td>27.9</td><td>41.7</td><td>0.56</td></tr>
+<tr><td>Ridge regression</td><td>Candidate 1</td><td>27.7</td><td>40.3</td><td>0.59</td></tr>
+<tr><td>Random Forest</td><td>Candidate 2</td><td><strong>25.8</strong></td><td><strong>37.8</strong></td><td><strong>0.64</strong></td></tr>
+</tbody>
+</table>
+</div>
+<figure class="context-figure">
+<div class="visual-title">6 · Regression model comparison</div>
+<img src="figures/06_model_comparison.png" alt="Bar chart of grouped cross-validation mean absolute error for the mean predictor, income-only linear model, Ridge regression, and Random Forest, with error falling from the mean baseline to the Random Forest." />
+<figcaption>
+The mean predictor confirms the baseline is honest (R² ≈ 0). <strong>Income alone already explains most of what the models capture</strong> (R² jumps to 0.56). Ridge adds little over income-only, and the Random Forest is best (R² = 0.64), indicating some nonlinearity, but the gain over a one-feature linear model is modest. By the milestone's "prefer the simpler model when performance is similar" guidance, income-only is a strong, interpretable reference and Random Forest is the best performer.
+</figcaption>
+</figure>
+
+<h3>What the models learned, and where they fail</h3>
+<figure class="context-figure">
+<div class="visual-title">7 · Predicted vs. actual (held-out test)</div>
+<img src="figures/07_predicted_vs_actual.png" alt="Two scatter plots comparing predicted and actual EVs per 1,000 households on the held-out test set for Ridge and Random Forest, points scattered around the diagonal with wider spread at high adoption." />
+<figcaption>Both candidates track the diagonal at low-to-moderate adoption and scatter more at high-adoption codes, where the rate varies most.</figcaption>
+</figure>
+<figure class="context-figure">
+<div class="visual-title">8 · Random Forest residuals</div>
+<img src="figures/08_residuals.png" alt="Scatter plot of Random Forest residuals against predicted adoption on the held-out test set, roughly centered on zero with larger spread at higher predictions." />
+<figcaption>Residuals center near zero but widen for higher predicted adoption — the model is least certain exactly where adoption is highest.</figcaption>
+</figure>
+<figure class="context-figure">
+<div class="visual-title">9 · Feature importance</div>
+<img src="figures/09_feature_importance.png" alt="Horizontal bar chart of Random Forest feature importance with median household income dominating and renter share, households, and population much smaller." />
+<figcaption>
+<strong>Median household income dominates</strong> both the Ridge coefficients (largest standardized weight) and Random Forest importance (~0.81), confirmed by permutation importance on the test set. Renter share, population, and household count contribute little. This matches the exploratory finding that income is the main measurable correlate of adoption.
+</figcaption>
+</figure>
+<p>
+<strong>Error analysis.</strong> Out-of-sample absolute error is larger for higher-income codes (MAE ≈ 32 vs. ≈ 14 for lower-income) and for larger ZCTAs — high-adoption affluent areas have the widest spread, so they are hardest to pin down. <strong>Outlier sensitivity:</strong> capping the target at the training 99th percentile (learned from training rows only, scored against the original uncapped test values) barely moves anything (Random Forest test R² 0.33 → 0.34), so the conclusions are not an artifact of a few extreme codes.
+</p>
+
+<h3>Clustering: community profiles and candidate underserved areas</h3>
+<p>
+K-Means over 418 Colorado codes (adoption rate, income, renter share, and verified public ports per 1,000 households, all standardized) selects <strong>k = 3</strong> by silhouette (0.40), with bootstrap stability (mean adjusted Rand index 0.74) indicating a reasonably stable structure.
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Cluster</th><th>Codes</th><th>Mean adoption /1k</th><th>Mean income</th><th>Renter share</th><th>Ports /1k</th><th>Plain-language profile</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td>42</td><td>95.7</td><td>$89k</td><td>0.41</td><td>18.3</td><td>Well-supplied, renter-heavy, moderate adoption</td></tr>
+<tr><td>1</td><td>81</td><td>149.6</td><td>$140k</td><td>0.17</td><td>2.0</td><td>High-adoption affluent suburbs, thin public supply</td></tr>
+<tr><td>2</td><td>295</td><td>37.7</td><td>$76k</td><td>0.28</td><td>1.9</td><td>Mainstream mid-income areas, low adoption and supply</td></tr>
+</tbody>
+</table>
+</div>
+<figure class="context-figure">
+<div class="visual-title">10 · K-Means model selection</div>
+<img src="figures/10_cluster_selection.png" alt="Line chart of mean silhouette and inertia against the number of clusters from 2 to 8, with silhouette highest at k equals 3." />
+<figcaption>Silhouette peaks at k = 3; the inertia elbow is consistent with that choice.</figcaption>
+</figure>
+<figure class="context-figure">
+<div class="visual-title">11 · Colorado community clusters</div>
+<img src="figures/11_cluster_map.png" alt="Scatter plot of EV demand against public charging supply per 1,000 households, points colored by cluster, showing one well-supplied group and two low-supply groups at different adoption levels." />
+<figcaption>Demand (x) against public supply (y), colored by cluster. One group sits high on supply; the high-demand suburbs and the mainstream areas both sit low on supply.</figcaption>
+</figure>
+<p>
+<strong>Candidate underserved areas (RQ4).</strong> We flag a code as a <em>candidate</em> underserved area when it has <strong>demonstrated demand</strong> (adoption at or above the cohort median) together with <strong>thin public supply</strong> (ports per 1,000 households at or below the cohort median) — <em>low supply alone is not an underserved verdict.</em> This screens <strong>76 Colorado codes</strong>, of which <strong>25 also carry an equity flag</strong> (below-median income or above-median renter share). They concentrate in the high-adoption suburbs (cluster 1) and the mid-income mainstream (cluster 2). The full shortlist is in <code>data/processed/candidate_underserved_zctas.csv</code>.
+</p>
+
+<h3>Interpretation, limitations, and what this does not prove</h3>
+<ul class="clean-list">
+<li><strong>Descriptive, not causal.</strong> Income predicts adoption well, but this is association from a ZIP↔ZCTA proxy join across mixed time periods — not evidence that raising income causes EV adoption.</li>
+<li><strong>Equity caveat.</strong> A model trained on <em>current</em> ownership partly encodes existing income inequality. A priority ranking that simply chases predicted demand would reinforce it, so the underserved screen weighs demand and equity together, not demand alone.</li>
+<li><strong>Geography is a proxy.</strong> The 80/81 prefix and ZIP3 grouping approximate Colorado membership and spatial structure; ZCTA polygons or a ZIP-to-county crosswalk would be the accurate upgrade.</li>
+<li><strong>These feed, but do not settle, the H3 map.</strong> Regression and clustering are supporting evidence for the eventual site-priority layer. Road access, land use, charger coverage, and electrical-infrastructure capacity still need separate assessment before any construction claim.</li>
+</ul>
+<p class="note">
+Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/prepare_modeling.py</code> → <code>python src/train_regression.py</code> → <code>python src/cluster_communities.py</code> regenerate every metric and figure (06–11). Offline checks: <code>python -m unittest discover -s tests</code>. See the repository <code>README.md</code>.
 </p>
 </div>
 </section>

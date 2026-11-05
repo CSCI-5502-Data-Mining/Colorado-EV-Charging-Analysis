@@ -74,6 +74,47 @@ Outputs (regenerated, not committed as raw data):
 
 The narrative walkthrough (acquisition → cleaning → join → EDA, with inline charts and interpretations) is in [`notebooks/cleaning_and_preprocessing.ipynb`](notebooks/cleaning_and_preprocessing.ipynb). Documentation of provenance, the data dictionary, and limitations is in [`docs/`](docs/). All paths resolve relative to the repository root, so no machine-specific absolute paths are needed.
 
+## Reproduce the Milestone 3 modeling & evaluation
+
+Milestone 3 builds on the Milestone 2 output (`data/processed/colorado_ev_zcta_clean.csv`). After running the Milestone 2 pipeline above, run these from the repository root, one at a time (all use a fixed seed = 42, so results are deterministic):
+
+```bash
+# 0. (one-time) scikit-learn is pinned in requirements.txt; reinstall if needed
+pip install -r requirements.txt
+
+# 1. Build the Colorado modeling table: filter to CO (80/81), audit AFDC
+#    station matching and recode verified zero supply, build features/target
+#    and cohorts. Writes data/processed/modeling_colorado.csv + prep report.
+python src/prepare_modeling.py
+
+# 2. Regression: mean baseline + income-only baseline + Ridge + Random Forest,
+#    ZIP3-grouped CV (primary) and random split (comparison), training-only
+#    tuning and winsorization sensitivity. Writes regression_metrics.json and
+#    figures 06-09.
+python src/train_regression.py
+
+# 3. K-Means community clustering: k sweep (silhouette + elbow), bootstrap
+#    stability, cluster profiles, and the candidate-underserved screen. Writes
+#    cluster_assignments.csv, cluster_profiles.json, candidate_underserved_zctas.csv,
+#    and figures 10-11.
+python src/cluster_communities.py
+
+# 4. (optional) Offline checks for the leakage guards, CO filter, supply
+#    recoding, cohort logic, and grouped-split holdout
+python -m unittest discover -s tests   # or: pytest tests
+```
+
+Milestone 3 outputs (regenerated, not committed as raw data):
+- `data/processed/modeling_colorado.csv` — Colorado modeling table with cohorts and ZIP3 groups
+- `data/processed/modeling_prep_report.json` — CO filter + supply-audit + cohort counts
+- `data/processed/regression_metrics.json` — four-way comparison, tuning, winsorization sensitivity, feature importance, subgroup errors
+- `data/processed/cluster_assignments.csv`, `cluster_profiles.json`, `candidate_underserved_zctas.csv`
+- `figures/06_model_comparison.png` … `figures/11_cluster_map.png`
+
+The modeling scripts share `src/modeling_common.py` (repo-root paths, the Colorado working definition, the feature/target contract, and the leakage guard). The Models & Evaluation write-up is the `#models` section of `index.html` and [`docs/website_models_section.md`](docs/website_models_section.md).
+
+**Milestone 3 design choices (short):** target `ev_per_1000_households`; predictors exclude `ev_count`/`bev_count`/`phev_count` (leakage); Colorado scoped by 80/81 prefix (working definition, ZIP ≠ ZCTA); no-AFDC-match codes recoded to *verified zero* supply after an audit, not treated as missing; `households ≥ 100` primary cohort with a training-only winsorized sensitivity run; held-out ZIP3 test set reserved first, then GroupKFold-by-ZIP3 CV with a random-split comparison and all preprocessing/tuning inside training folds.
+
 **Scope:** the analysis counts all vehicle classes (215,105 EVs in the 2026-07-07 snapshot), summing `Vehicle Count`. The light-duty subtotal (202,639) is reported as a diagnostic only.
 
 ## Repository structure

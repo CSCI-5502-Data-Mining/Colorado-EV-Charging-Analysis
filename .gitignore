@@ -33,6 +33,13 @@ figures/*.jpg
 !figures/03_supply_vs_adoption.png
 !figures/04_renter_vs_ports.png
 !figures/05_missingness.png
+# Milestone 3 modeling figures (tracked deliverables)
+!figures/06_model_comparison.png
+!figures/07_predicted_vs_actual.png
+!figures/08_residuals.png
+!figures/09_feature_importance.png
+!figures/10_cluster_selection.png
+!figures/11_cluster_map.png
 
 .agents
 .idea
