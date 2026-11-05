@@ -33,3 +33,6 @@ figures/*.jpg
 !figures/03_supply_vs_adoption.png
 !figures/04_renter_vs_ports.png
 !figures/05_missingness.png
+
+.agents
+.idea
