@@ -50,6 +50,39 @@ def repo_relative(path) -> str:
         return Path(path).name
 
 
+def git_commit() -> str:
+    """Short git commit of the repo for experiment provenance, or a sentinel.
+
+    Experiment provenance must be reproducible; recording the commit lets a
+    reader tie a logged result back to the exact code that produced it.
+    """
+    import subprocess
+    try:
+        out = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
+                             cwd=str(ROOT), capture_output=True, text=True, timeout=10)
+        return out.stdout.strip() if out.returncode == 0 else 'no-git-commit'
+    except Exception:
+        return 'no-git-commit'
+
+
+# --- Fixed subgroup definitions (equity track) -----------------------------
+# These are FIXED analysis rules, not experiment-tunable. Experiments report
+# subgroup performance against these exact definitions so an agent cannot
+# silently drop a hard geographic area or redraw the subgroup boundaries.
+# Each maps a subgroup name to (column, comparison, threshold_source):
+#   threshold_source 'median' => threshold is the TRAINING-fold median of the
+#   column (computed at evaluation time, never from test data); 'zero' => a
+#   fixed literal 0 boundary (e.g. verified-zero public charging supply).
+SUBGROUP_SPECS = {
+    'lower_income':   ('median_income', '<',  'median'),
+    'higher_income':  ('median_income', '>=', 'median'),
+    'renter_heavy':   ('renter_share',  '>=', 'median'),
+    'owner_heavy':    ('renter_share',  '<',  'median'),
+    'zero_supply':    ('ports_per_1000_households', '==', 'zero'),
+    'has_infrastructure': ('ports_per_1000_households', '>', 'zero'),
+}
+
+
 def read_zcta_strings(path, usecols=None) -> pd.DataFrame:
     """Read the processed CSV keeping zcta as a zero-padded 5-digit string.
 

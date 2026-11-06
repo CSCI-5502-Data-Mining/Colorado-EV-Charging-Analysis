@@ -87,11 +87,21 @@ pip install -r requirements.txt
 #    and cohorts. Writes data/processed/modeling_colorado.csv + prep report.
 python src/prepare_modeling.py
 
-# 2. Regression: mean baseline + income-only baseline + Ridge + Random Forest,
-#    ZIP3-grouped CV (primary) and random split (comparison), training-only
-#    tuning and winsorization sensitivity. Writes regression_metrics.json and
-#    figures 06-09.
+# 2. Regression: mean baseline + income-only baseline + Ridge + Random Forest.
+#    Headline evaluation is NESTED ZIP3-grouped CV (unbiased); single-level
+#    grouped CV and a random split are kept as labelled comparisons. Includes
+#    training-only tuning and winsorization sensitivity. Writes
+#    regression_metrics.json and figures 06-09.
 python src/train_regression.py
+
+# 2b. Bounded, seeded experiment harness: a predeclared search over feature
+#     subsets, preprocessing strategies, and hyperparameters, each scored by the
+#     same nested protocol, with MAE-first + equity/stability model selection
+#     and a one-time held-out test evaluation of the selected model. Logs every
+#     experiment (config, seed, git commit, nested + subgroup metrics,
+#     selected/rejected) to results/. The held-out test set is untouched during
+#     the search.
+python src/experiment_harness.py
 
 # 3. K-Means community clustering: k sweep (silhouette + elbow), bootstrap
 #    stability, cluster profiles, and the candidate-underserved screen. Writes
@@ -107,13 +117,14 @@ python -m unittest discover -s tests   # or: pytest tests
 Milestone 3 outputs (regenerated, not committed as raw data):
 - `data/processed/modeling_colorado.csv` — Colorado modeling table with cohorts and ZIP3 groups
 - `data/processed/modeling_prep_report.json` — CO filter + supply-audit + cohort counts
-- `data/processed/regression_metrics.json` — four-way comparison, tuning, winsorization sensitivity, feature importance, subgroup errors
+- `data/processed/regression_metrics.json` — nested + single-level comparison, tuning, winsorization sensitivity, feature importance, subgroup errors
 - `data/processed/cluster_assignments.csv`, `cluster_profiles.json`, `candidate_underserved_zctas.csv`
+- `results/experiments.csv`, `results/best_config.json`, `results/figures/*.png` — the experiment log, run summary, and harness figures (see [`results/README.md`](results/README.md))
 - `figures/06_model_comparison.png` … `figures/11_cluster_map.png`
 
-The modeling scripts share `src/modeling_common.py` (repo-root paths, the Colorado working definition, the feature/target contract, and the leakage guard). The Models & Evaluation write-up is the `#models` section of `index.html` and [`docs/website_models_section.md`](docs/website_models_section.md).
+The modeling scripts share `src/modeling_common.py` (repo-root paths, the Colorado working definition, the feature/target contract, the leakage guard, and the fixed equity-subgroup definitions). The fixed evaluation protocol — nested ZIP3-grouped CV, the held-out test split, metrics, subgroup scoring — lives in `src/experiment_eval.py` and is shared by both `train_regression.py` and `experiment_harness.py`, so no experiment can change the evaluation rules. The Models & Evaluation write-up is the `#models` section of `index.html` and [`docs/website_models_section.md`](docs/website_models_section.md).
 
-**Milestone 3 design choices (short):** target `ev_per_1000_households`; predictors exclude `ev_count`/`bev_count`/`phev_count` (leakage); Colorado scoped by 80/81 prefix (working definition, ZIP ≠ ZCTA); no-AFDC-match codes recoded to *verified zero* supply after an audit, not treated as missing; `households ≥ 100` primary cohort with a training-only winsorized sensitivity run; held-out ZIP3 test set reserved first, then GroupKFold-by-ZIP3 CV with a random-split comparison and all preprocessing/tuning inside training folds.
+**Milestone 3 design choices (short):** target `ev_per_1000_households`; predictors exclude `ev_count`/`bev_count`/`phev_count` (leakage); Colorado scoped by 80/81 prefix (working definition, ZIP ≠ ZCTA); no-AFDC-match codes recoded to *verified zero* supply after an audit, not treated as missing; `households ≥ 100` primary cohort with a training-only winsorized sensitivity run; held-out ZIP3 test set reserved first and scored once, then **nested** ZIP3-grouped CV (outer=5, inner=4) as the unbiased headline — single-level grouped CV and a random split kept only as labelled comparisons — with all preprocessing/feature-selection/tuning inside training folds. Model selection is MAE-first with geographic-consistency and equity-subgroup tie-breakers; the six equity subgroups (income, renter, zero-supply vs. infrastructure) are fixed and reported for every experiment.
 
 **Scope:** the analysis counts all vehicle classes (215,105 EVs in the 2026-07-07 snapshot), summing `Vehicle Count`. The light-duty subtotal (202,639) is reported as a diagnostic only.
 

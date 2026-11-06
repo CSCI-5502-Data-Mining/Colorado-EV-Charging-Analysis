@@ -372,31 +372,74 @@ The target is <strong>EV adoption rate</strong> = registered EVs per 1,000 house
 From the 1,161-code union we keep the <strong>500 Colorado codes</strong> (80/81 prefix — a working definition, since ZIP ≠ ZCTA) and drop 661 out-of-state registration-ZIP artifacts. We then <strong>audit charging supply before recoding</strong>: a Colorado code present in the registrations but absent from the AFDC station file means AFDC lists no public, existing, electric station there. Because the join is a direct same-normalization 5-digit match and AFDC is a directory of existing stations, those 207 codes are recoded to <strong>verified zero supply</strong> (station_count = 0, ports = 0) rather than treated as missing — otherwise we would discard the very communities the project aims to find. A station that matched but reported blank port counts stays missing (0 such cases here). A <code>households ≥ 100</code> floor removes four tiny-denominator codes whose rates are unstable (e.g. one code with 17 households), leaving <strong>418 codes</strong> for the primary regression.
 </p>
 
-<h3>Validation strategy (leakage-safe)</h3>
+<h3>Validation strategy (leakage-safe, nested)</h3>
 <p>
-A held-out <strong>test set of whole ZIP3 groups</strong> is reserved first, so no geographic group spans train and test. On the training portion we use <strong>GroupKFold by ZIP3</strong> (keeping neighboring codes together) as the primary estimate, with a plain random split reported for contrast. Imputation, scaling, and hyperparameter tuning run <em>inside</em> the training folds only. Colorado has just ~17 ZIP3 groups, so a single held-out grouped slice is high-variance; the grouped cross-validation (every training code scored once while held out) is the more stable headline, and the test split is a confirmatory check. We report <strong>MAE</strong> (typical error in EVs per 1,000 households), <strong>RMSE</strong> (penalizes large misses), and <strong>R²</strong> (share of variation explained).
+A held-out <strong>test set of whole ZIP3 groups</strong> is reserved first, so no geographic group spans train and test, and it is scored exactly once, at the very end, for the single selected model. On the training portion we use <strong>nested ZIP3-grouped cross-validation</strong>: an inner GroupKFold tunes hyperparameters and an outer GroupKFold scores the tuned procedure. This matters because tuning and reporting on the same folds is optimistic — the nested outer-fold means estimate the whole <em>select-and-fit</em> procedure honestly. Imputation, scaling, transforms, and feature selection are all fit <em>inside</em> the folds. We report <strong>MAE</strong> (typical error in EVs per 1,000 households) as the primary metric, with <strong>RMSE</strong>, <strong>R²</strong>, <strong>fold-to-fold variability</strong> (geographic consistency), and <strong>subgroup error</strong> (equity) as supporting evidence. A plain random split and the earlier single-level grouped CV are kept only as labelled comparisons.
 </p>
 
 <h3>Comparison: baseline vs. candidate models</h3>
-<p>Grouped cross-validation on the training set, same protocol for every approach (lower MAE/RMSE and higher R² are better):</p>
+<p>Nested ZIP3-grouped cross-validation on the training set, same protocol for every approach (lower MAE/RMSE and higher R² are better). "±" is the standard deviation across the five outer geographic folds:</p>
 <div class="table-wrap">
 <table>
 <thead>
-<tr><th>Approach</th><th>Role</th><th>MAE</th><th>RMSE</th><th>R²</th></tr>
+<tr><th>Approach</th><th>Role</th><th>Nested MAE (±fold std)</th><th>RMSE</th><th>R²</th></tr>
 </thead>
 <tbody>
-<tr><td>Mean predictor</td><td>Baseline 1</td><td>49.1</td><td>64.3</td><td>−0.05</td></tr>
-<tr><td>Income-only linear</td><td>Baseline 2</td><td>27.9</td><td>41.7</td><td>0.56</td></tr>
-<tr><td>Ridge regression</td><td>Candidate 1</td><td>27.7</td><td>40.3</td><td>0.59</td></tr>
-<tr><td>Random Forest</td><td>Candidate 2</td><td><strong>25.8</strong></td><td><strong>37.8</strong></td><td><strong>0.64</strong></td></tr>
+<tr><td>Mean predictor</td><td>Baseline 1</td><td>49.0 (±7.6)</td><td>62.9</td><td>−0.12</td></tr>
+<tr><td>Income-only linear</td><td>Baseline 2</td><td>27.8 (±2.2)</td><td>41.5</td><td>0.48</td></tr>
+<tr><td>Ridge regression</td><td>Candidate 1</td><td>27.6 (±2.1)</td><td>40.1</td><td>0.52</td></tr>
+<tr><td>Random Forest</td><td>Candidate 2</td><td><strong>26.7 (±2.0)</strong></td><td><strong>38.8</strong></td><td><strong>0.55</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">
+Honesty check: the earlier <em>single-level</em> grouped CV reported the Random Forest at MAE 25.8 / R² 0.64. Under nested CV — which does not reuse the tuning folds for reporting — it is MAE 26.7 / R² 0.55. The single-level number was optimistic for the tuned model; the nested number is the one we report.
+</p>
+<figure class="context-figure">
+<div class="visual-title">6 · Regression model comparison</div>
+<img src="figures/06_model_comparison.png" alt="Bar chart of nested cross-validation mean absolute error with fold-standard-deviation error bars for the mean predictor, income-only linear model, Ridge regression, and Random Forest, with error falling from the mean baseline to the Random Forest." />
+<figcaption>
+The mean predictor confirms the baseline is honest (R² ≈ 0). <strong>Income alone already explains most of what the models capture</strong> (R² ≈ 0.48). Ridge adds little, and the Random Forest is best (R² ≈ 0.55) with some nonlinearity, but the gain over a one-feature linear model is modest and the fold error bars overlap. By the milestone's "prefer the simpler model when performance is similar" guidance, income-only is a strong, interpretable reference and the forest is the best performer.
+</figcaption>
+</figure>
+
+<h3>Automated experiment search and model selection</h3>
+<p>
+To choose among modeling options defensibly — rather than hand-picking the best-looking score — we ran a <strong>bounded, seeded experiment harness</strong> (<code>src/experiment_harness.py</code>). It evaluates a predeclared set of candidates (feature subsets, preprocessing strategies like log-transforming skewed size features and mean-vs-median imputation, and Ridge/Random Forest hyperparameter grids) through the <em>same</em> nested protocol, and logs every experiment — configuration, features, parameters, seed, git commit, nested metrics, fold variability, and subgroup error — to <code>results/experiments.csv</code>, each marked selected or rejected. The target, geographic groups, held-out test set, data-quality rules, and metric are fixed and cannot be changed by an experiment; every candidate passes the leakage guard before it runs.
+</p>
+<p>
+Selection is <strong>MAE-first with equity and stability tie-breakers</strong>: among candidates within 1 MAE unit of the best (not meaningfully different), prefer lower fold-to-fold variability, then more even subgroup performance. Baselines are references and cannot win. The procedure selected a <strong>two-feature (income + renter share) Random Forest</strong> — it matched the four-feature forest on MAE (26.2) while being the most consistent across geographic folds (±1.4, the lowest of any candidate), a simpler and steadier model. After selection finished, the held-out test set was scored <strong>once</strong>: MAE 23.0, confirming the nested estimate was not optimistic.
+</p>
+<figure class="context-figure">
+<div class="visual-title">Experiment comparison (nested CV, fold-std error bars)</div>
+<img src="results/figures/experiments_mae.png" alt="Horizontal bar chart of nested cross-validation MAE for every logged experiment with fold-standard-deviation error bars, the selected two-feature Random Forest highlighted." />
+<figcaption>Every logged candidate on one protocol; the selected two-feature Random Forest is highlighted. Full record in <code>results/experiments.csv</code> and <code>results/best_config.json</code>.</figcaption>
+</figure>
+
+<h3>Equity: does the model work across Colorado communities?</h3>
+<p>
+A low overall MAE can still hide a model that predicts well in wealthy Denver suburbs but poorly in rural or lower-income areas — which would undercut the project's equity goal. So every experiment reports MAE within fixed subgroups. For the selected model (out-of-fold on the training set):
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Subgroup</th><th>Codes</th><th>MAE</th><th>Reading</th></tr>
+</thead>
+<tbody>
+<tr><td>Lower income</td><td>164</td><td>16.3</td><td>Best — lower-adoption areas are easier to predict</td></tr>
+<tr><td>Higher income</td><td>165</td><td>36.3</td><td>Worst — affluent high-adoption areas vary most</td></tr>
+<tr><td>Renter-heavy</td><td>165</td><td>22.9</td><td>Moderate</td></tr>
+<tr><td>Owner-heavy</td><td>164</td><td>29.8</td><td>Harder — owner-heavy suburbs skew high-adoption</td></tr>
+<tr><td>Zero public supply</td><td>107</td><td>26.5</td><td>Even with has-infrastructure</td></tr>
+<tr><td>Has infrastructure</td><td>222</td><td>26.2</td><td>Even with zero-supply</td></tr>
 </tbody>
 </table>
 </div>
 <figure class="context-figure">
-<div class="visual-title">6 · Regression model comparison</div>
-<img src="figures/06_model_comparison.png" alt="Bar chart of grouped cross-validation mean absolute error for the mean predictor, income-only linear model, Ridge regression, and Random Forest, with error falling from the mean baseline to the Random Forest." />
+<div class="visual-title">Subgroup (equity) performance</div>
+<img src="results/figures/experiments_subgroup_mae.png" alt="Grouped bar chart comparing out-of-fold MAE of the income-only baseline and the selected Random Forest across six subgroups: lower/higher income, renter/owner-heavy, and zero-supply/has-infrastructure." />
 <figcaption>
-The mean predictor confirms the baseline is honest (R² ≈ 0). <strong>Income alone already explains most of what the models capture</strong> (R² jumps to 0.56). Ridge adds little over income-only, and the Random Forest is best (R² = 0.64), indicating some nonlinearity, but the gain over a one-feature linear model is modest. By the milestone's "prefer the simpler model when performance is similar" guidance, income-only is a strong, interpretable reference and Random Forest is the best performer.
+The useful finding for the project: the model is roughly <strong>even across zero-supply vs. has-infrastructure areas</strong> (MAE ≈ 26 either way), so it does not systematically fail in the under-built communities the underserved screen targets. Its weakness is <strong>high-income, high-adoption</strong> areas, where adoption varies most — a caution for prediction, not for the equity screen.
 </figcaption>
 </figure>
 
@@ -419,7 +462,7 @@ The mean predictor confirms the baseline is honest (R² ≈ 0). <strong>Income a
 </figcaption>
 </figure>
 <p>
-<strong>Error analysis.</strong> Out-of-sample absolute error is larger for higher-income codes (MAE ≈ 32 vs. ≈ 14 for lower-income) and for larger ZCTAs — high-adoption affluent areas have the widest spread, so they are hardest to pin down. <strong>Outlier sensitivity:</strong> capping the target at the training 99th percentile (learned from training rows only, scored against the original uncapped test values) barely moves anything (Random Forest test R² 0.33 → 0.34), so the conclusions are not an artifact of a few extreme codes.
+<strong>Error analysis.</strong> Out-of-fold absolute error is much larger for higher-income codes (MAE ≈ 36 vs. ≈ 16 for lower-income) and for owner-heavy areas — affluent high-adoption suburbs have the widest spread, so they are hardest to pin down, while the model is steadiest exactly where adoption is low. <strong>Outlier sensitivity:</strong> capping the target at the training 99th percentile (learned from training rows only, scored against the original uncapped test values) barely moves anything, so the conclusions are not an artifact of a few extreme codes.
 </p>
 
 <h3>Clustering: community profiles and candidate underserved areas</h3>

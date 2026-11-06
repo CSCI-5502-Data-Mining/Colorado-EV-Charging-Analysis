@@ -47,6 +47,7 @@ from modeling_common import (
     FIGURES, MODELING_CSV, PROCESSED, REGRESSION_FEATURES, TARGET,
     assert_no_leakage, repo_relative,
 )
+from experiment_eval import Candidate, nested_cv
 
 import matplotlib
 matplotlib.use('Agg')
@@ -215,6 +216,50 @@ def main():
 
     report['results'] = results
 
+    # --- Nested ZIP3-grouped CV (UNBIASED headline for Milestone 3) --------
+    # The single-level grouped_cv above reuses the same folds for tuning and
+    # reporting, so for the tuned models it is slightly optimistic. Nested CV
+    # scores the whole select-and-fit PROCEDURE: an outer GroupKFold holds out
+    # folds while an inner GroupKFold tunes inside each outer-train block. These
+    # outer-fold means are the numbers we report as unbiased; the single-level
+    # grouped_cv is kept as a labelled comparison. The held-out TEST set is not
+    # touched here. (Shared protocol: experiment_eval.nested_cv.)
+    nested_specs = [
+        ('baseline_mean', REGRESSION_FEATURES,
+         lambda: DummyRegressor(strategy='mean'), {}, True),
+        ('baseline_income_only', ['median_income'], LinearRegression, {}, True),
+        ('ridge', REGRESSION_FEATURES, lambda: Ridge(random_state=SEED),
+         {'model__alpha': [0.1, 1.0, 10.0, 50.0, 100.0, 300.0]}, True),
+        ('random_forest', REGRESSION_FEATURES,
+         lambda: RandomForestRegressor(random_state=SEED, n_jobs=-1),
+         {'model__n_estimators': [200, 400], 'model__max_depth': [4, 6, None],
+          'model__min_samples_leaf': [1, 3, 5]}, False),
+    ]
+    nested = {}
+    for name, feats, factory, grid, scale in nested_specs:
+        cand = Candidate(name=name, features=feats, model_factory=factory,
+                         param_grid=grid, scale=scale)
+        res = nested_cv(cand, train)
+        nested[name] = {
+            'nested_outer_MAE_mean': res['nested_outer_MAE_mean'],
+            'nested_outer_MAE_std': res['nested_outer_MAE_std'],
+            'nested_outer_RMSE_mean': res['nested_outer_RMSE_mean'],
+            'nested_outer_R2_mean': res['nested_outer_R2_mean'],
+            'nested_fold_MAEs': res['nested_fold_MAEs'],
+            'biased_single_level_grouped_cv': results[name]['grouped_cv'],
+            'subgroup_oof_MAE': res['subgroup_oof_MAE'],
+        }
+    report['nested_cv'] = {
+        'protocol': ('nested ZIP3 GroupKFold (outer=5, inner=4) on the training '
+                     'set; outer-fold means are the unbiased estimate of the '
+                     'tune-and-fit procedure. The held-out test set is untouched.'),
+        'headline': 'Use nested_outer_* for Milestone 3 reporting.',
+        'comparison_note': ('biased_single_level_grouped_cv is the earlier '
+                            'single-level number (same folds tuned and scored); '
+                            'it is optimistic for the tuned models and kept only '
+                            'for comparison.'),
+        'results': nested}
+
     # --- Winsorization sensitivity (caps from TRAIN only; score UNCAPPED) --
     cap = float(np.quantile(y_tr, 0.99))  # learned on training target only
     y_tr_capped = y_tr.clip(upper=cap)
@@ -267,32 +312,38 @@ def main():
     with open(args.metrics, 'w') as f:
         json.dump(report, f, indent=2)
 
-    _figures(results, y_te, {'ridge': ridge_fit, 'random_forest': rf_fit},
+    _figures(results, nested, y_te, {'ridge': ridge_fit, 'random_forest': rf_fit},
              X_te, REGRESSION_FEATURES, report['rf_feature_importance'])
 
-    # --- Console comparison table -----------------------------------------
+    # --- Console comparison table (nested = headline) ----------------------
     print(f"n_cohort={len(cohort)}  train={len(train)}  test={len(test)} "
           f"({report['n_test_groups']} held-out ZIP3 groups)")
-    print(f"{'approach':22s} {'MAE_grp':>8s} {'RMSE_grp':>9s} {'R2_grp':>7s} "
-          f"{'MAE_test':>9s} {'R2_test':>8s}")
+    print(f"{'approach':22s} {'nMAE':>7s} {'+/-std':>7s} {'nR2':>6s} "
+          f"| {'biasedMAE_grp':>13s} | {'MAE_test':>9s}")
     for key in ['baseline_mean', 'baseline_income_only', 'ridge', 'random_forest']:
+        n = nested[key]
         r = results[key]
-        print(f"{key:22s} {r['grouped_cv']['MAE']:8.2f} {r['grouped_cv']['RMSE']:9.2f} "
-              f"{r['grouped_cv']['R2']:7.2f} {r['test']['MAE']:9.2f} {r['test']['R2']:8.2f}")
+        print(f"{key:22s} {n['nested_outer_MAE_mean']:7.2f} "
+              f"{n['nested_outer_MAE_std']:7.2f} {n['nested_outer_R2_mean']:6.2f} "
+              f"| {r['grouped_cv']['MAE']:13.2f} | {r['test']['MAE']:9.2f}")
+    print("nMAE/nR2 = unbiased nested ZIP3-grouped CV; biasedMAE_grp = "
+          "single-level grouped CV (comparison only).")
     print(f"Wrote {repo_relative(args.metrics)} and regression figures.")
 
 
-def _figures(results, y_te, fitted, X_te, features, rf_importance):
-    # Fig: model comparison (grouped-CV MAE)
+def _figures(results, nested, y_te, fitted, X_te, features, rf_importance):
+    # Fig: model comparison (nested-CV MAE with fold-std error bars = headline)
     keys = ['baseline_mean', 'baseline_income_only', 'ridge', 'random_forest']
     labels = ['Mean', 'Income-only', 'Ridge', 'Random Forest']
-    maes = [results[k]['grouped_cv']['MAE'] for k in keys]
+    maes = [nested[k]['nested_outer_MAE_mean'] for k in keys]
+    stds = [nested[k]['nested_outer_MAE_std'] for k in keys]
     fig, ax = plt.subplots(figsize=(7.2, 4.6))
-    ax.bar(labels, maes, color=['#999', '#6a9', '#48c', '#c63'])
-    ax.set(ylabel='Grouped-CV MAE (EVs per 1,000 households)',
-           title='Regression comparison (lower is better)')
+    ax.bar(labels, maes, yerr=stds, color=['#999', '#6a9', '#48c', '#c63'],
+           error_kw={'ecolor': '#333', 'capsize': 4})
+    ax.set(ylabel='Nested-CV MAE (EVs per 1,000 households)',
+           title='Regression comparison — nested ZIP3-grouped CV (lower is better)')
     for i, v in enumerate(maes):
-        ax.text(i, v, f'{v:.1f}', ha='center', va='bottom')
+        ax.text(i, v + stds[i], f'{v:.1f}', ha='center', va='bottom')
     fig.tight_layout(); fig.savefig(FIGURES / '06_model_comparison.png', dpi=160); plt.close(fig)
 
     # Fig: predicted vs actual (both candidate models on the test set)

@@ -46,36 +46,82 @@ so those 207 codes are genuine absences → **verified zero supply**, not missin
 Treating them as missing (and dropping them) would discard the underserved
 communities the project exists to find.
 
-## Validation strategy (leakage-safe)
+## Validation strategy (leakage-safe, nested)
 
 1. Reserve a held-out **test set of whole ZIP3 groups** first (no group spans
-   train and test).
-2. On the training portion: **GroupKFold by ZIP3** (primary) + random KFold
-   (comparison).
-3. Imputation, scaling, and hyperparameter tuning happen **inside the training
-   folds only**.
-4. Colorado has ~17 ZIP3 groups, so a single grouped test slice is
-   high-variance; **grouped CV is the headline**, the test split is a
-   confirmatory check.
+   train and test); score it **once**, for the selected model, at the end.
+2. On the training portion: **nested ZIP3-GroupKFold** (outer = 5, inner = 4).
+   The inner loop tunes hyperparameters; the outer loop scores the tuned
+   procedure. Outer-fold means are the **unbiased headline**. Single-level
+   grouped CV and a random split are kept only as labelled (optimistic)
+   comparisons.
+3. Imputation, scaling, log transforms, feature selection, and tuning happen
+   **inside the training folds only**.
 
-Metrics: **MAE** (typical error in EVs per 1,000 households), **RMSE**
-(penalizes large misses), **R²** (variation explained).
+Metrics: **MAE** (primary), with **RMSE**, **R²**, **fold-to-fold variability**
+(geographic consistency), and **subgroup MAE** (equity) as supporting evidence.
 
-## Comparison (grouped CV on the training set)
+## Comparison (nested ZIP3-grouped CV on the training set)
 
-| Approach | Role | MAE | RMSE | R² |
+"± std" is the spread across the five outer geographic folds.
+
+| Approach | Role | Nested MAE (±std) | RMSE | R² |
 |---|---|---:|---:|---:|
-| Mean predictor | Baseline 1 | 49.1 | 64.3 | −0.05 |
-| Income-only linear | Baseline 2 | 27.9 | 41.7 | 0.56 |
-| Ridge regression | Candidate 1 | 27.7 | 40.3 | 0.59 |
-| Random Forest | Candidate 2 | **25.8** | **37.8** | **0.64** |
+| Mean predictor | Baseline 1 | 49.0 (±7.6) | 62.9 | −0.12 |
+| Income-only linear | Baseline 2 | 27.8 (±2.2) | 41.5 | 0.48 |
+| Ridge regression | Candidate 1 | 27.6 (±2.1) | 40.1 | 0.52 |
+| Random Forest | Candidate 2 | **26.7 (±2.0)** | **38.8** | **0.55** |
 
 The mean predictor confirms an honest baseline (R² ≈ 0). **Income alone already
-explains most of what the models capture** (R² = 0.56). Ridge adds little;
-Random Forest is best (R² = 0.64) — some nonlinearity, but a modest gain over a
-one-feature linear model. Following "prefer the simpler model when performance
-is similar," income-only is a strong interpretable reference and Random Forest
-is the best performer.
+explains most of what the models capture** (R² ≈ 0.48). Ridge adds little;
+Random Forest is best (R² ≈ 0.55) — some nonlinearity, but a modest gain over a
+one-feature linear model, with overlapping fold error bars. Following "prefer
+the simpler model when performance is similar," income-only is a strong
+interpretable reference and the forest is the best performer.
+
+**Honesty check (nested vs. single-level).** Single-level grouped CV — which
+reuses the tuning folds for reporting — put the Random Forest at MAE 25.8 /
+R² 0.64. Nested CV puts it at MAE 26.7 / R² 0.55. The single-level number was
+optimistic for the tuned model; the nested number is what we report.
+
+## Automated experiment search and model selection
+
+A bounded, seeded harness (`src/experiment_harness.py`) scores a predeclared set
+of candidates — feature subsets, preprocessing strategies (log-transform skewed
+size features, mean vs. median imputation), and Ridge/Random Forest
+hyperparameter grids — through the same nested protocol, logging every run
+(config, features, params, seed, git commit, nested + subgroup metrics,
+selected/rejected) to `results/experiments.csv`.
+
+- **Fixed and not experiment-tunable:** target, ZIP3 groups, held-out test set,
+  data-quality rules, metric, and the six equity subgroups. Every candidate
+  passes the leakage guard first.
+- **Selection:** MAE-first; among candidates within 1 MAE unit of the best,
+  prefer lower fold-std (geographic consistency), then lower subgroup-MAE spread
+  (equity). Baselines are references, never winners.
+- **Selected model:** a **two-feature (income + renter share) Random Forest** —
+  it ties the four-feature forest on MAE (26.2) while being the most consistent
+  across folds (±1.4, the lowest of any candidate). The held-out test set, scored
+  once after selection, gives MAE 23.0, confirming the nested estimate held.
+
+## Equity: performance across Colorado communities
+
+Out-of-fold MAE within fixed subgroups for the selected model:
+
+| Subgroup | Codes | MAE |
+|---|---:|---:|
+| Lower income | 164 | 16.3 |
+| Higher income | 165 | 36.3 |
+| Renter-heavy | 165 | 22.9 |
+| Owner-heavy | 164 | 29.8 |
+| Zero public supply | 107 | 26.5 |
+| Has infrastructure | 222 | 26.2 |
+
+The project-relevant finding: the model is **roughly even across zero-supply vs.
+has-infrastructure areas** (≈ 26 either way), so it does not systematically fail
+in the under-built communities the underserved screen targets. Its weakness is
+**high-income, high-adoption** areas, where adoption varies most — a caution for
+prediction, not for the equity screen.
 
 ## What the models learned, and where they fail
 

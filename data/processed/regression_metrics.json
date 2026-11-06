@@ -1,5 +1,5 @@
 {
-  "generated_utc": "2026-11-05T20:20:06.060782+00:00",
+  "generated_utc": "2026-11-05T23:45:10.194807+00:00",
   "input": "data/processed/modeling_colorado.csv",
   "target": "ev_per_1000_households",
   "features": [
@@ -100,6 +100,189 @@
         "model__n_estimators": 200
       },
       "search": "GridSearchCV over ZIP3 GroupKFold (neg MAE)"
+    }
+  },
+  "nested_cv": {
+    "protocol": "nested ZIP3 GroupKFold (outer=5, inner=4) on the training set; outer-fold means are the unbiased estimate of the tune-and-fit procedure. The held-out test set is untouched.",
+    "headline": "Use nested_outer_* for Milestone 3 reporting.",
+    "comparison_note": "biased_single_level_grouped_cv is the earlier single-level number (same folds tuned and scored); it is optimistic for the tuned models and kept only for comparison.",
+    "results": {
+      "baseline_mean": {
+        "nested_outer_MAE_mean": 48.947,
+        "nested_outer_MAE_std": 7.614,
+        "nested_outer_RMSE_mean": 62.933,
+        "nested_outer_R2_mean": -0.116,
+        "nested_fold_MAEs": [
+          41.003,
+          44.81,
+          61.379,
+          54.016,
+          43.525
+        ],
+        "biased_single_level_grouped_cv": {
+          "MAE": 49.094,
+          "RMSE": 64.316,
+          "R2": -0.052
+        },
+        "subgroup_oof_MAE": {
+          "lower_income": {
+            "n": 164,
+            "MAE": 42.855
+          },
+          "higher_income": {
+            "n": 165,
+            "MAE": 55.296
+          },
+          "renter_heavy": {
+            "n": 165,
+            "MAE": 43.656
+          },
+          "owner_heavy": {
+            "n": 164,
+            "MAE": 54.565
+          },
+          "zero_supply": {
+            "n": 107,
+            "MAE": 48.314
+          },
+          "has_infrastructure": {
+            "n": 222,
+            "MAE": 49.47
+          }
+        }
+      },
+      "baseline_income_only": {
+        "nested_outer_MAE_mean": 27.777,
+        "nested_outer_MAE_std": 2.217,
+        "nested_outer_RMSE_mean": 41.527,
+        "nested_outer_R2_mean": 0.479,
+        "nested_fold_MAEs": [
+          30.025,
+          24.542,
+          29.985,
+          25.856,
+          28.477
+        ],
+        "biased_single_level_grouped_cv": {
+          "MAE": 27.873,
+          "RMSE": 41.683,
+          "R2": 0.558
+        },
+        "subgroup_oof_MAE": {
+          "lower_income": {
+            "n": 164,
+            "MAE": 19.51
+          },
+          "higher_income": {
+            "n": 165,
+            "MAE": 36.185
+          },
+          "renter_heavy": {
+            "n": 165,
+            "MAE": 22.418
+          },
+          "owner_heavy": {
+            "n": 164,
+            "MAE": 33.36
+          },
+          "zero_supply": {
+            "n": 107,
+            "MAE": 30.322
+          },
+          "has_infrastructure": {
+            "n": 222,
+            "MAE": 26.692
+          }
+        }
+      },
+      "ridge": {
+        "nested_outer_MAE_mean": 27.575,
+        "nested_outer_MAE_std": 2.079,
+        "nested_outer_RMSE_mean": 40.081,
+        "nested_outer_R2_mean": 0.52,
+        "nested_fold_MAEs": [
+          28.232,
+          25.062,
+          31.042,
+          27.649,
+          25.892
+        ],
+        "biased_single_level_grouped_cv": {
+          "MAE": 27.683,
+          "RMSE": 40.265,
+          "R2": 0.588
+        },
+        "subgroup_oof_MAE": {
+          "lower_income": {
+            "n": 164,
+            "MAE": 20.17
+          },
+          "higher_income": {
+            "n": 165,
+            "MAE": 35.151
+          },
+          "renter_heavy": {
+            "n": 165,
+            "MAE": 23.403
+          },
+          "owner_heavy": {
+            "n": 164,
+            "MAE": 31.99
+          },
+          "zero_supply": {
+            "n": 107,
+            "MAE": 28.348
+          },
+          "has_infrastructure": {
+            "n": 222,
+            "MAE": 27.363
+          }
+        }
+      },
+      "random_forest": {
+        "nested_outer_MAE_mean": 26.657,
+        "nested_outer_MAE_std": 1.986,
+        "nested_outer_RMSE_mean": 38.798,
+        "nested_outer_R2_mean": 0.546,
+        "nested_fold_MAEs": [
+          26.551,
+          24.812,
+          30.366,
+          25.069,
+          26.486
+        ],
+        "biased_single_level_grouped_cv": {
+          "MAE": 25.82,
+          "RMSE": 37.79,
+          "R2": 0.637
+        },
+        "subgroup_oof_MAE": {
+          "lower_income": {
+            "n": 164,
+            "MAE": 16.555
+          },
+          "higher_income": {
+            "n": 165,
+            "MAE": 36.844
+          },
+          "renter_heavy": {
+            "n": 165,
+            "MAE": 23.149
+          },
+          "owner_heavy": {
+            "n": 164,
+            "MAE": 30.333
+          },
+          "zero_supply": {
+            "n": 107,
+            "MAE": 24.483
+          },
+          "has_infrastructure": {
+            "n": 222,
+            "MAE": 27.813
+          }
+        }
+      }
     }
   },
   "winsorization_sensitivity": {
