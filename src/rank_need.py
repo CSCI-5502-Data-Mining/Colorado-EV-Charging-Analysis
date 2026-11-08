@@ -213,6 +213,21 @@ def main():
     cohort['tier_composite'] = assign_tiers(cohort['rank_composite'], n)
     cohort['tier_baseline'] = assign_tiers(cohort['rank_baseline'], n)
 
+    # --- Special-use / institutional flag (documented, reproducible) -------
+    # Some ZCTAs are dominated by group quarters or institutional housing (e.g.
+    # a military academy), where renter share and per-household rates do not
+    # describe an ordinary residential community. We FLAG these rather than drop
+    # them, so their high priority can be read with the right caveat. Rule: a
+    # ZCTA is special-use if 100% of occupied housing is renter-occupied OR its
+    # persons-per-household far exceeds any residential norm (>5; the cohort's
+    # 99th percentile is ~3.4). The flag changes no scores -- it only annotates.
+    pop = pd.to_numeric(cohort.get('population'), errors='coerce')
+    hh = pd.to_numeric(cohort['households'], errors='coerce')
+    cohort['persons_per_household'] = np.where(hh > 0, pop / hh, np.nan)
+    cohort['special_use_flag'] = (
+        (pd.to_numeric(cohort['renter_share'], errors='coerce') >= 0.999)
+        | (cohort['persons_per_household'] > 5))
+
     report = {'generated_utc': datetime.now(timezone.utc).isoformat(),
               'input': repo_relative(args.input), 'git_commit': git_commit(),
               'n_cohort': int(len(cohort)), 'top_n': TOP_N,
@@ -250,6 +265,30 @@ def main():
 
     # --- Coverage audit: which of the 500 CO codes can be ranked -----------
     report['coverage_audit'] = coverage_audit(co, rankable_idx)
+
+    # --- Special-use audit: institutional / group-quarters ZCTAs -----------
+    su = cohort.loc[cohort['special_use_flag']]
+    report['special_use_audit'] = {
+        'rule': ('renter_share == 100% OR persons_per_household > 5 (cohort 99th '
+                 'pct ~3.4). Flags group-quarters / institutional ZCTAs whose '
+                 'renter share and per-household rates do not describe an '
+                 'ordinary residential community. Flag does NOT change scores.'),
+        'n_flagged': int(len(su)),
+        'n_flagged_in_tier1': int((su['tier_composite'] == 1).sum()),
+        'flagged': [{'zcta': r['zcta'], 'tier': int(r['tier_composite']),
+                     'score': round(float(r['score_composite']), 3),
+                     'renter_share': round(float(r['renter_share']), 3),
+                     'persons_per_household': round(float(r['persons_per_household']), 2),
+                     'households': int(r['households'])}
+                    for _, r in su.sort_values('score_composite', ascending=False).iterrows()],
+        'interpretation': ('Flagged areas are kept in the ranking but should be '
+                           'read as special cases: e.g. 80840 is the U.S. Air '
+                           'Force Academy ZCTA (100% renter, ~9.5 persons/'
+                           'household), so "100% renter, zero public ports" '
+                           'reflects institutional housing, not an ordinary '
+                           'underserved community. Verify access and whether new '
+                           'public charging would serve the general public before '
+                           'treating such a ZCTA as a top candidate.')}
 
     # --- Access-score tie audit: zero-supply codes share one access score --
     zero_supply = cohort['ports_per_1000_households'] == 0
@@ -432,6 +471,7 @@ def main():
             'households', 'comp_demand', 'comp_access', 'comp_equity',
             'score_baseline', 'rank_baseline', 'tier_baseline',
             'score_composite', 'rank_composite', 'tier_composite',
+            'persons_per_household', 'special_use_flag',
             'stability_pct_movement', 'tier_retention_rate']
     cols = [c for c in cols if c in cohort.columns]
     cohort.sort_values('rank_composite')[cols].to_csv(args.out, index=False)
@@ -463,6 +503,10 @@ def main():
     print(f"Household COVERAGE of top-priority tier ({hc['n_codes']} codes): "
           f"{hc['households_covered']:,} households "
           f"(~{hc['renter_households_covered']:,} renter households) -- coverage, not access gained.")
+    sa = report['special_use_audit']
+    print(f"Special-use flag: {sa['n_flagged']} institutional/group-quarters ZCTAs "
+          f"({sa['n_flagged_in_tier1']} in tier 1): "
+          f"{', '.join(f['zcta'] for f in sa['flagged'])}")
     print(f"Wrote {repo_relative(args.out)} and {repo_relative(args.report)}.")
 
 

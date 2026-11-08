@@ -607,7 +607,7 @@ This is the concrete answer to the project's central question. The 84 highest-pr
 <tr><th>ZCTA</th><th>EVs /1k hh</th><th>Ports /1k hh</th><th>Median income</th><th>Renter share</th><th>Demand</th><th>Access</th><th>Equity</th><th>Score</th></tr>
 </thead>
 <tbody>
-<tr><td>80840</td><td>72.2</td><td>0.0</td><td>$69k</td><td>1.00</td><td>0.67</td><td>0.83</td><td>0.85</td><td><strong>0.78</strong></td></tr>
+<tr><td>80840 <span title="special-use / institutional ZCTA">⚠</span></td><td>72.2</td><td>0.0</td><td>$69k</td><td>1.00</td><td>0.67</td><td>0.83</td><td>0.85</td><td><strong>0.78</strong></td></tr>
 <tr><td>80835</td><td>47.3</td><td>0.0</td><td>$49k</td><td>0.38</td><td>0.52</td><td>0.83</td><td>0.86</td><td>0.73</td></tr>
 <tr><td>81430</td><td>128.9</td><td>0.0</td><td>$74k</td><td>0.16</td><td>0.87</td><td>0.83</td><td>0.45</td><td>0.72</td></tr>
 <tr><td>81019</td><td>45.2</td><td>0.0</td><td>$38k</td><td>0.28</td><td>0.50</td><td>0.83</td><td>0.79</td><td>0.71</td></tr>
@@ -624,6 +624,9 @@ This is the concrete answer to the project's central question. The 84 highest-pr
 </div>
 <p class="note">
 Reading the table: most top-tier areas have <em>zero</em> public ports (access = 0.83, the shared zero-supply percentile) paired with demonstrated demand and an equity signal. The mix varies — 81430 and 80220 are demand-driven, while 80521 and 80729 are equity-driven — which is exactly the demand-vs-equity balance the composite is meant to surface. Tier is the defensible unit; the exact order within the top 12 is not meaningful to the decimal (see the stability note above).
+</p>
+<p>
+<strong>⚠ Special-use areas flagged.</strong> The top-ranked ZCTA, <strong>80840, is the U.S. Air Force Academy</strong> — an institutional area, not an ordinary residential community. Its inputs are distorted accordingly: 100% renter-occupied housing and about 9.5 persons per household (vs. a cohort norm near 2.4), reflecting group quarters / military housing. So its "100% renter, zero public ports" profile drives a high equity + access score for reasons that do not mean the general public would be served by a new public charger there. A documented, reproducible rule (renter share = 100% <em>or</em> persons-per-household &gt; 5) flags <strong>three such ZCTAs</strong> (80840, 81062, 80902); they are <em>kept</em> in the ranking with a <code>special_use_flag</code> column rather than deleted, so the result is transparent. Before treating any flagged area as a top candidate, verify access restrictions, the renter-share denominator, and whether sited chargers would serve the public. The 81 non-flagged tier-1 ZCTAs are unaffected.
 </p>
 
 <h3>Urban vs. rural charging, and renter affordability (supporting questions)</h3>
@@ -724,6 +727,7 @@ Colorado’s 2022 NEVI Plan (CDOT, with Colorado Energy Office partnership descr
 <div class="container">
 <p class="section-kicker">D. Proposal Overview</p>
 <h2>Approved idea, data, and constraints</h2>
+<p class="note"><em>This section records the original Milestone 0–1 proposal — the problem, goal, planned data, and constraints anticipated up front. Items it describes as pending (exact ACS tables, the ZIP/ZCTA join, snapshot dates) have since been decided and carried out; see the Data &amp; Exploration and Models &amp; Evaluation sections for what was actually done.</em></p>
 <div class="proposal-grid">
 <div>
 <h3>Problem</h3>
@@ -739,7 +743,7 @@ Colorado’s 2022 NEVI Plan (CDOT, with Colorado Energy Office partnership descr
 </p>
 <h3>Change after Milestone 0</h3>
 <p>
-The core problem, goal, and charging/EV sources are unchanged. We added <strong>U.S. Census ACS community estimates</strong> to the planned stack because the approved questions require income and housing context, which were not in the Milestone 0 data table. Exact ACS tables, years, and the ZIP/ZCTA join still need to be specified in a later milestone. Research questions were restated more tightly (four questions instead of one umbrella question plus two bullets) so each can be mapped to evidence.
+The core problem, goal, and charging/EV sources are unchanged. We added <strong>U.S. Census ACS community estimates</strong> to the planned stack because the approved questions require income and housing context, which were not in the Milestone 0 data table. <em>(Since resolved:</em> the exact tables are ACS 2024 5-year B01003/B19013/B25003 and, for the affordability analysis, B25070, plus 2020 Census DHC P2 for urban/rural; the ZIP/ZCTA join is documented in the Data section.<em>)</em> Research questions were restated more tightly (four questions instead of one umbrella question plus two bullets) so each can be mapped to evidence.
 </p>
 <div class="table-wrap">
 <table>
@@ -774,7 +778,7 @@ The core problem, goal, and charging/EV sources are unchanged. We added <strong>
 <tr>
 <td><a href="https://www.census.gov/data/developers/data-sets/acs-5year.html" target="_blank" rel="noopener">U.S. Census ACS</a> <em>(added after M0)</em></td>
 <td>Income, housing, and population context</td>
-<td class="skeleton">Exact tables TBD (income, renter share, housing, vehicles, urban/rural proxy)</td>
+<td>Resolved: ACS 2024 5-year B01003, B19013, B25003, B25070; 2020 Census DHC P2 (urban/rural)</td>
 <td>Survey estimates; ZCTAs do not perfectly match USPS ZIP codes.</td>
 </tr>
 </tbody>
@@ -785,7 +789,7 @@ The core problem, goal, and charging/EV sources are unchanged. We added <strong>
 <article class="card"><h4>Equity bias</h4><p>Existing EV ownership may already reflect income inequality. Mitigation: include income, renter share, and charger access in an equity-aware priority view not demand alone.</p></article>
 <article class="card"><h4>Demand proxy</h4><p>Registration location is not where a vehicle is charged. Treat registrations as residential demand estimates and combine them with charger and population data.</p></article>
 <article class="card"><h4>Usage coverage</h4><p>EValuateCO covers only selected funded stations and may not represent statewide behavior.</p></article>
-<article class="card"><h4>Temporal mismatch</h4><p>Datasets may represent different years or update schedules. Snapshot dates will be recorded during data prep.</p></article>
+<article class="card"><h4>Temporal mismatch</h4><p>Datasets represent different years and update schedules. Snapshot dates were recorded during data prep (EV 2026-07-07, stations 2026-10-15, ACS 2020–2024, Census urban/rural 2020) and the mismatch is noted as a limitation.</p></article>
 </div>
 </div>
 </section>

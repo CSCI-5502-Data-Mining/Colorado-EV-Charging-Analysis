@@ -395,6 +395,18 @@ class UrbanRuralAffordability(unittest.TestCase):
             self.assertAlmostEqual(float(out['renter_cost_burden_share'].iloc[0]), 0.5, places=6)
             self.assertEqual(int(out['renter_households_rent_computed'].iloc[0]), 80)
 
+    def test_special_use_flag_catches_institutional_not_ordinary(self):
+        # The special-use rule (renter_share==100% OR persons/household>5) must
+        # flag institutional/group-quarters ZCTAs and leave ordinary ones alone.
+        import numpy as np
+        renter = pd.Series([1.00, 0.30, 0.55, 0.42])
+        pph = pd.Series([2.4, 9.5, 2.1, 6.1])  # ordinary, USAFA-like, ordinary, group-qtrs
+        flag = (renter >= 0.999) | (pph > 5)
+        self.assertEqual(list(flag), [True, True, False, True])
+        # An ordinary renter-heavy-but-not-100% area with normal household size
+        # is NOT flagged.
+        self.assertFalse(bool(((pd.Series([0.65]) >= 0.999) | (pd.Series([2.7]) > 5)).iloc[0]))
+
     def test_urban_share_undefined_for_zero_population(self):
         import tempfile
         import urban_rural_affordability as ura

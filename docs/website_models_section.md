@@ -225,6 +225,15 @@ demonstrated demand and an equity signal; the mix ranges from demand-driven
 (e.g. 81430, 80220) to equity-driven (e.g. 80521, 80729). Full list and
 components in `need_ranking.csv`; the website shows the top 12 inline.
 
+**Special-use flag.** A documented rule (renter share = 100% OR
+persons-per-household > 5; cohort 99th pct ~3.4) flags 3 institutional/
+group-quarters ZCTAs — **80840 (U.S. Air Force Academy)**, 81062, 80902 — two of
+them tier-1. They are kept in the ranking with a `special_use_flag` column, not
+dropped. 80840's "100% renter, zero public ports, ~9.5 persons/household"
+profile is institutional housing, so its #1 rank should not be read as an
+ordinary underserved community; access restrictions and whether sited chargers
+would serve the public need verifying. See `special_use_audit` in the report.
+
 **Pre-freeze checks (`need_ranking_report.json`):**
 
 - **Broad tiers, not exact ranks (stability verified).** Bootstrap resampling
