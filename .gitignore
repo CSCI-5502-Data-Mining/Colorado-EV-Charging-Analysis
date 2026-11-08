@@ -40,3 +40,5 @@ figures/*.jpg
 !figures/09_feature_importance.png
 !figures/10_cluster_selection.png
 !figures/11_cluster_map.png
+!figures/12_need_ranking_shift.png
+!figures/13_need_ranking_equity.png

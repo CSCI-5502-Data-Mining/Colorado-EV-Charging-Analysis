@@ -34,8 +34,11 @@ from sklearn.linear_model import LinearRegression, Ridge
 
 from modeling_common import (MODELING_CSV, ROOT, TARGET, assert_no_leakage,
                              git_commit, repo_relative)
-from experiment_eval import (Candidate, SEED, grouped_test_split, nested_cv,
-                             score_all, subgroup_mae)
+from sklearn.model_selection import GroupKFold
+
+from experiment_eval import (Candidate, INNER_SPLITS, OUTER_SPLITS, SEED,
+                             grouped_test_split, nested_cv, score_all,
+                             subgroup_mae)
 
 RESULTS = ROOT / 'results'
 ALL_FEATURES = ['median_income', 'renter_share', 'population', 'households']
@@ -127,6 +130,45 @@ def select_best(logged):
     return near[0]
 
 
+def fully_nested_selection_mae(family, train):
+    """Honest procedure-level estimate that also accounts for CANDIDATE
+    selection. Picking the winner by the minimum over candidates' own outer-fold
+    means is itself a selection step the per-candidate nested CV does not cover,
+    so that winner score is mildly optimistic. Here, inside each OUTER fold we
+    select the best candidate using ONLY inner CV on that outer-train block,
+    then score the chosen candidate on the outer-test fold. The mean of those
+    outer-test MAEs evaluates the whole select-among-candidates-and-fit
+    procedure, with no candidate-selection leakage.
+    """
+    from sklearn.metrics import mean_absolute_error
+    from sklearn.model_selection import GridSearchCV
+    groups = train['zip3'].values
+    outer = GroupKFold(n_splits=OUTER_SPLITS)
+    inner = GroupKFold(n_splits=INNER_SPLITS)
+    fold_mae, picks = [], []
+    for tr_idx, te_idx in outer.split(train, train[TARGET], groups):
+        tr, te, g_tr = train.iloc[tr_idx], train.iloc[te_idx], groups[tr_idx]
+        best_name, best_inner, best_fit = None, np.inf, None
+        for c in family:
+            s = GridSearchCV(c.build_pipeline(), c.param_grid or {}, cv=inner,
+                             scoring='neg_mean_absolute_error', n_jobs=-1)
+            s.fit(tr[c.features], tr[TARGET], groups=g_tr)
+            if -s.best_score_ < best_inner:
+                best_name, best_inner = c.name, -s.best_score_
+                best_fit = (s.best_estimator_, c.features)
+        est, feats = best_fit
+        fold_mae.append(float(mean_absolute_error(te[TARGET], est.predict(te[feats]))))
+        picks.append(best_name)
+    return {'fully_nested_selection_MAE_mean': round(float(np.mean(fold_mae)), 3),
+            'fully_nested_selection_MAE_std': round(float(np.std(fold_mae)), 3),
+            'per_outer_fold_selected_candidate': picks,
+            'note': ('Accounts for candidate selection: the best candidate is '
+                     'chosen inside each outer-train block, so this is the '
+                     'honest procedure-level MAE. It is >= the selected '
+                     "candidate's own nested MAE by the candidate-selection "
+                     'bias.')}
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--input', default=str(MODELING_CSV))
@@ -192,17 +234,31 @@ def main():
         else:
             fitted, best_params = pipe.fit(train[chosen.features], train[TARGET]), {}
         test_pred = fitted.predict(test[chosen.features])
+        # Honest procedure-level estimate accounting for candidate selection:
+        # select the best candidate inside each outer fold (fully nested).
+        eligible = [c for c in cands if not c.name.startswith('baseline')]
+        fully_nested = fully_nested_selection_mae(eligible, train)
         final = {
             'selected_candidate': best['name'],
             'selection_rule': ('lowest nested outer-fold mean MAE; ties (within '
                                '1.0 MAE) broken by lower fold-MAE std then lower '
                                'subgroup-MAE spread (equity/stability).'),
             'best_params': {k: v for k, v in best_params.items()},
+            'selected_candidate_nested_MAE': best['nested_outer_MAE_mean'],
+            'fully_nested_selection': fully_nested,
+            'candidate_selection_bias': round(
+                fully_nested['fully_nested_selection_MAE_mean']
+                - best['nested_outer_MAE_mean'], 3),
+            'procedure_level_headline_MAE': fully_nested['fully_nested_selection_MAE_mean'],
             'held_out_test': score_all(test[TARGET], test_pred),
             'held_out_test_subgroup_MAE': subgroup_mae(
                 test, test[TARGET].to_numpy(), test_pred, train),
             'note': ('One-time test evaluation of the single selected procedure. '
-                     'The test set was untouched during the search.'),
+                     'The test set was untouched during the search. The selected '
+                     "candidate's own nested MAE is mildly optimistic because "
+                     'picking the min over candidates is itself a selection step; '
+                     'procedure_level_headline_MAE (fully nested candidate '
+                     'selection) is the honest number to report.'),
         }
 
     # --- Persist the experiment log and the run summary --------------------
@@ -240,6 +296,11 @@ def main():
     if final:
         print(f"\nSelected: {final['selected_candidate']}  "
               f"params={final['best_params']}")
+        print(f"Selected candidate nested MAE: {final['selected_candidate_nested_MAE']} "
+              f"| fully-nested procedure MAE (honest): "
+              f"{final['procedure_level_headline_MAE']} "
+              f"(selection bias +{final['candidate_selection_bias']})")
+        print(f"  per-outer-fold selected: {final['fully_nested_selection']['per_outer_fold_selected_candidate']}")
         print(f"One-time held-out test: {final['held_out_test']}")
         print("Held-out test subgroup MAE:")
         for sg, d in final['held_out_test_subgroup_MAE'].items():

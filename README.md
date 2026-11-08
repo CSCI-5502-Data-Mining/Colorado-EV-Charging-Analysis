@@ -109,8 +109,24 @@ python src/experiment_harness.py
 #    and figures 10-11.
 python src/cluster_communities.py
 
-# 4. (optional) Offline checks for the leakage guards, CO filter, supply
-#    recoding, cohort logic, and grouped-split holdout
+# 3b. ZCTA charging-NEED ranking (planning track): access-only baseline vs a
+#     demand + equity + access composite (demand = OBSERVED adoption, not the
+#     model prediction). Reports 5 broad priority TIERS (exact ranks are
+#     unstable), a 500->418 coverage audit of who cannot be ranked, an
+#     access-score tie audit (zero-supply codes tie), weight sensitivity, rank +
+#     tier stability, and a top-tier household-reach measure. Writes
+#     need_ranking.csv, need_ranking_report.json, and figures 12-13.
+python src/rank_need.py
+
+# 3c. (optional) Pre-freeze diagnostics: reconcile the EDA correlation with the
+#     regression R2, audit nested-CV selection bias, held-out test by ZIP3
+#     group, and paired-fold comparison of the two Random Forests. Read-only;
+#     writes data/processed/diagnostics_m3.json.
+python src/diagnostics_m3.py
+
+# 4. (optional) Offline checks for leakage guards, CO filter, supply recoding,
+#    cohort logic, grouped-split holdout, nested-CV + selection-bias logic, the
+#    fixed equity subgroups, and the need-ranking components
 python -m unittest discover -s tests   # or: pytest tests
 ```
 
@@ -119,12 +135,16 @@ Milestone 3 outputs (regenerated, not committed as raw data):
 - `data/processed/modeling_prep_report.json` — CO filter + supply-audit + cohort counts
 - `data/processed/regression_metrics.json` — nested + single-level comparison, tuning, winsorization sensitivity, feature importance, subgroup errors
 - `data/processed/cluster_assignments.csv`, `cluster_profiles.json`, `candidate_underserved_zctas.csv`
-- `results/experiments.csv`, `results/best_config.json`, `results/figures/*.png` — the experiment log, run summary, and harness figures (see [`results/README.md`](results/README.md))
-- `figures/06_model_comparison.png` … `figures/11_cluster_map.png`
+- `data/processed/need_ranking.csv`, `need_ranking_report.json` — ZCTA need ranking (both approaches), priority tiers, weights, sensitivity, scale-invariant percentile + tier stability, the 500→418 coverage audit, the access-tie audit, a tie-aware full-priority-group comparison, and household coverage of the top tier
+- `data/processed/diagnostics_m3.json` — the four pre-freeze diagnostic checks
+- `results/experiments.csv`, `results/best_config.json`, `results/figures/*.png` — the experiment log, run summary (incl. the fully-nested procedure MAE), and harness figures (see [`results/README.md`](results/README.md))
+- `figures/06_model_comparison.png` … `figures/13_need_ranking_equity.png`
 
 The modeling scripts share `src/modeling_common.py` (repo-root paths, the Colorado working definition, the feature/target contract, the leakage guard, and the fixed equity-subgroup definitions). The fixed evaluation protocol — nested ZIP3-grouped CV, the held-out test split, metrics, subgroup scoring — lives in `src/experiment_eval.py` and is shared by both `train_regression.py` and `experiment_harness.py`, so no experiment can change the evaluation rules. The Models & Evaluation write-up is the `#models` section of `index.html` and [`docs/website_models_section.md`](docs/website_models_section.md).
 
-**Milestone 3 design choices (short):** target `ev_per_1000_households`; predictors exclude `ev_count`/`bev_count`/`phev_count` (leakage); Colorado scoped by 80/81 prefix (working definition, ZIP ≠ ZCTA); no-AFDC-match codes recoded to *verified zero* supply after an audit, not treated as missing; `households ≥ 100` primary cohort with a training-only winsorized sensitivity run; held-out ZIP3 test set reserved first and scored once, then **nested** ZIP3-grouped CV (outer=5, inner=4) as the unbiased headline — single-level grouped CV and a random split kept only as labelled comparisons — with all preprocessing/feature-selection/tuning inside training folds. Model selection is MAE-first with geographic-consistency and equity-subgroup tie-breakers; the six equity subgroups (income, renter, zero-supply vs. infrastructure) are fixed and reported for every experiment.
+**Milestone 3 — two objectives.** *Primary (planning):* which Colorado communities may benefit most from new public charging — answered by K-Means profiles + the ZCTA need ranking. *Supporting:* how socioeconomic factors relate to *existing* adoption — answered by regression, treated as demand evidence, not the objective.
+
+**Design choices (short):** target `ev_per_1000_households`; predictors exclude `ev_count`/`bev_count`/`phev_count` (leakage); Colorado scoped by 80/81 prefix (working definition, ZIP ≠ ZCTA); no-AFDC-match codes recoded to *verified zero* supply after an audit, not treated as missing; `households ≥ 100` primary cohort with a training-only winsorized sensitivity run; held-out ZIP3 test set reserved first and scored once, then **nested** ZIP3-grouped CV (outer=5, inner=4) with all preprocessing/feature-selection/tuning inside folds. The **fully-nested procedure MAE (26.84)** — which also accounts for candidate selection — is the reported headline; the selected candidate's own nested MAE (26.25) and single-level grouped CV are kept only as labelled comparisons. The two Random Forests are statistically indistinguishable (paired-fold t p = 0.68), so the two-feature model is chosen on parsimony, not a proven edge. Model selection is MAE-first with geographic-consistency and equity-subgroup tie-breakers; the six equity subgroups (income, renter, zero-supply vs. infrastructure) are fixed. The **need ranking** keeps demand (observed, not predicted), access, and equity as separate percentile-normalized components with fixed, un-tuned weights; the equity-weighted ranking shifts the top set toward renter-heavy, lower-income communities. H3, roads, substations, and land-use are documented as future site-level work, not Milestone 3 results.
 
 **Scope:** the analysis counts all vehicle classes (215,105 EVs in the 2026-07-07 snapshot), summing `Vehicle Count`. The light-duty subtotal (202,639) is reported as a diagnostic only.
 

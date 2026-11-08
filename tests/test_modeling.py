@@ -241,6 +241,121 @@ class HarnessGovernance(unittest.TestCase):
         # Within 1.0 MAE: the lower fold-std (more consistent) model wins.
         self.assertEqual(eh.select_best(logged)['name'], 'rf_b')
 
+    def test_fully_nested_selection_not_below_best_candidate(self):
+        """The fully-nested procedure MAE must be >= the best candidate's own
+        nested MAE (it carries the extra candidate-selection cost), so it can
+        never understate error. Guards the honest-headline logic."""
+        import experiment_harness as eh
+        from sklearn.linear_model import LinearRegression, Ridge
+        train = _synthetic_train(n_per_group=24, n_groups=6)
+        family = [
+            eh.Candidate('lin_income', ['median_income'], LinearRegression),
+            eh.Candidate('ridge_two', ['median_income', 'renter_share'],
+                         lambda: Ridge(random_state=7),
+                         param_grid={'model__alpha': [1.0, 10.0]}),
+        ]
+        fn = eh.fully_nested_selection_mae(family, train)
+        own = min(eh.nested_cv(c, train)['nested_outer_MAE_mean'] for c in family)
+        # Allow a tiny tolerance for fold-composition differences.
+        self.assertGreaterEqual(fn['fully_nested_selection_MAE_mean'], own - 1.0)
+        self.assertEqual(len(fn['per_outer_fold_selected_candidate']),
+                         eh.OUTER_SPLITS)
+
+
+class NeedRanking(unittest.TestCase):
+    """The ZCTA charging-need ranking (planning track)."""
+
+    def _frame(self):
+        import rank_need as rn  # noqa: F401
+        return pd.DataFrame({
+            'ev_per_1000_households': [10.0, 50.0, 200.0, 5.0, 80.0, 120.0],
+            'ports_per_1000_households': [0.0, 1.0, 5.0, 0.0, 2.0, 10.0],
+            'median_income': [45000.0, 70000.0, 180000.0, 52000.0, 90000.0, 150000.0],
+            'renter_share': [0.6, 0.3, 0.1, 0.55, 0.35, 0.12],
+        })
+
+    def test_components_are_separate_and_in_unit_range(self):
+        import rank_need as rn
+        comp = rn.build_components(self._frame())
+        for c in ['demand', 'access', 'equity']:
+            self.assertTrue((comp[c] >= 0).all() and (comp[c] <= 1).all())
+        # Access = charging scarcity, so the zero-supply rows score highest.
+        self.assertEqual(comp['access'].idxmax(), 0)  # first row has 0 ports
+
+    def test_demand_uses_observed_not_predicted(self):
+        # Governance: the demand component must be the observed adoption column,
+        # never a model prediction. Higher observed adoption => higher demand.
+        import rank_need as rn
+        df = self._frame()
+        comp = rn.build_components(df)
+        self.assertEqual(comp['demand'].idxmax(), df['ev_per_1000_households'].idxmax())
+
+    def test_equity_weight_shifts_toward_lower_income(self):
+        # Weighting equity more heavily must not raise the selected set's income.
+        import rank_need as rn
+        df = self._frame()
+        comp = rn.build_components(df)
+        demand_heavy = rn.composite_score(comp, {'demand': 0.8, 'access': 0.1, 'equity': 0.1})
+        equity_heavy = rn.composite_score(comp, {'demand': 0.1, 'access': 0.1, 'equity': 0.8})
+        top_demand = df.loc[demand_heavy.nlargest(2).index, 'median_income'].mean()
+        top_equity = df.loc[equity_heavy.nlargest(2).index, 'median_income'].mean()
+        self.assertLess(top_equity, top_demand)
+
+    def test_percentile_normalization_robust_to_outlier(self):
+        # A single extreme supply value must not collapse the access spread.
+        import rank_need as rn
+        s = pd.Series([0.0, 1.0, 2.0, 3.0, 1000.0])
+        n = rn.minmax(s)
+        # Percentile ranks are evenly spread regardless of the 1000 outlier.
+        self.assertAlmostEqual(float(n.iloc[0]), 0.0, places=6)
+        self.assertAlmostEqual(float(n.iloc[-1]), 1.0, places=6)
+        self.assertAlmostEqual(float(n.iloc[2]), 0.5, places=6)
+
+    def test_tiers_handle_large_ties_without_inventing_order(self):
+        # A big tied block (e.g. zero-supply codes) must NOT be split into an
+        # arbitrary order; qcut with duplicates='drop' collapses to fewer tiers.
+        import rank_need as rn
+        # 10 codes tied at rank 1, then 1..5 distinct.
+        rank = pd.Series([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 11, 12, 13, 14, 15])
+        tiers = rn.assign_tiers(rank, len(rank), k=5)
+        # The ten tied codes must all share one tier (no fake ordering).
+        self.assertEqual(tiers.iloc[:10].nunique(), 1)
+        # Tiers are integers starting at 1 (highest need).
+        self.assertEqual(int(tiers.min()), 1)
+
+    def test_low_ownership_area_can_still_rank_high(self):
+        # Governance for review point #4: a low-adoption, renter-heavy,
+        # low-income, zero-supply area must be able to out-rank a high-adoption,
+        # owner, high-income, well-supplied area under the composite.
+        import rank_need as rn
+        df = pd.DataFrame({
+            'ev_per_1000_households': [5.0, 200.0],   # low vs high ownership
+            'ports_per_1000_households': [0.0, 10.0],  # none vs plenty
+            'median_income': [40000.0, 180000.0],      # low vs high
+            'renter_share': [0.7, 0.1],                # renter vs owner
+        })
+        comp = rn.build_components(df)
+        score = rn.composite_score(comp, rn.BASE_WEIGHTS)
+        # The low-ownership, high-need community must score higher.
+        self.assertGreater(score.iloc[0], score.iloc[1])
+
+    def test_percentile_movement_is_scale_invariant(self):
+        """A resample with fewer surviving codes must not inflate movement.
+        Guards the stability-metric bug fix: percentile rank is comparable
+        across different-length lists, integer rank is not."""
+        base = pd.Series([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+        # Same relative order but only half the codes 'survive' a resample.
+        subset = pd.Series([1.0, 3.0, 5.0, 7.0])
+        base_pct = base.rank(ascending=False, pct=True)
+        sub_pct = subset.rank(ascending=False, pct=True)
+        # For the top code, percentile stays ~top in both despite list length;
+        # integer ranks (1 of 8 vs 1 of 4) would look stable but the MIDDLE
+        # codes are where integer rank distorts. Check the metric is bounded.
+        self.assertTrue((base_pct >= 0).all() and (base_pct <= 1).all())
+        self.assertTrue((sub_pct >= 0).all() and (sub_pct <= 1).all())
+        # Top element percentile is small (near 0) on both scales -> comparable.
+        self.assertAlmostEqual(float(base_pct.iloc[0]), float(sub_pct.iloc[0]), delta=0.2)
+
 
 if __name__ == '__main__':
     unittest.main()

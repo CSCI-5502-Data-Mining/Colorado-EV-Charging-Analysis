@@ -1,0 +1,354 @@
+{
+  "generated_utc": "2026-11-08T04:01:57.712795+00:00",
+  "input": "data/processed/modeling_colorado.csv",
+  "git_commit": "147a410",
+  "n_cohort": 418,
+  "top_n": 30,
+  "base_weights": {
+    "demand": 0.33,
+    "access": 0.34,
+    "equity": 0.33
+  },
+  "normalization": "percentile-rank over the Colorado cohort (robust to heavy-tailed supply/adoption); constant -> 0.5",
+  "demand_source": "OBSERVED ev_per_1000_households (not the regression prediction), so a model trained on current ownership cannot steer the ranking toward already-wealthy areas.",
+  "components": {
+    "demand": "normalized observed EV adoption rate",
+    "access": "1 - normalized public ports per 1,000 households",
+    "equity": "mean of normalized renter share and (1 - normalized income)"
+  },
+  "caveat": "These scores flag CANDIDATE areas for further investigation. Without observed installation/utilization outcomes, no ZCTA can be called the objectively best site. Low supply alone (Approach 1) does not prove high need.",
+  "demand_is_not_unmet_demand": "The demand component is OBSERVED residential adoption, which measures existing ownership, NOT unmet demand for PUBLIC charging. A low-ownership, renter-heavy, low-home-charging area may still benefit greatly from public charging. Because access and equity carry two-thirds of the weight, the score does NOT require high ownership: of 36 low-adoption + renter-heavy + low-income + zero-supply codes, several reach the composite top tier. The equity-weighted ranking makes this case even stronger.",
+  "priority_tiers": "Reported as 5 broad tiers (1 = highest need), not exact ranks: individual ranks are unstable and the access-only score has large ties, so a tier is the finest ordering we defend.",
+  "coverage_audit": {
+    "colorado_codes_total": 500,
+    "rankable": 418,
+    "not_rankable": 82,
+    "exclusion_reasons_not_mutually_exclusive": {
+      "missing_median_income": 54,
+      "missing_households": 19,
+      "missing_renter_share": 27,
+      "missing_adoption_rate": 29,
+      "below_household_floor_100": 49
+    },
+    "rankable_profile": {
+      "n": 418,
+      "no_public_station": 146,
+      "share_no_public_station": 0.349,
+      "median_households": 2370.0,
+      "median_income": 85602.0
+    },
+    "not_rankable_profile": {
+      "n": 82,
+      "no_public_station": 61,
+      "share_no_public_station": 0.744,
+      "median_households": 69.0,
+      "median_income": 70820.0
+    },
+    "not_rankable_zctas": [
+      "80025",
+      "80165",
+      "80166",
+      "80201",
+      "80217",
+      "80225",
+      "80261",
+      "80294",
+      "80306",
+      "80309",
+      "80402",
+      "80419",
+      "80423",
+      "80425",
+      "80426",
+      "80429",
+      "80430",
+      "80434",
+      "80448",
+      "80453",
+      "80456",
+      "80463",
+      "80468",
+      "80473",
+      "80474",
+      "80475",
+      "80476",
+      "80477",
+      "80479",
+      "80497",
+      "80511",
+      "80523",
+      "80529",
+      "80532",
+      "80544",
+      "80546",
+      "80612",
+      "80623",
+      "80639",
+      "80649",
+      "80652",
+      "80742",
+      "80746",
+      "80750",
+      "80754",
+      "80802",
+      "80822",
+      "80830",
+      "80913",
+      "80914",
+      "80929",
+      "80932",
+      "80939",
+      "81024",
+      "81027",
+      "81029",
+      "81030",
+      "81044",
+      "81045",
+      "81138",
+      "81210",
+      "81222",
+      "81228",
+      "81241",
+      "81243",
+      "81248",
+      "81320",
+      "81334",
+      "81335",
+      "81414",
+      "81426",
+      "81429",
+      "81502",
+      "81522",
+      "81610",
+      "81612",
+      "81638",
+      "81640",
+      "81642",
+      "81646",
+      "81649",
+      "81655"
+    ],
+    "interpretation": "The un-rankable codes are mostly very small/rural (low median households) and a HIGHER share have no public station than the rankable cohort, so they may be MORE under-served, not less. They are excluded only for missing socioeconomic fields or an unstable tiny household denominator, and are reported here rather than silently dropped. Enumerating every true Colorado Census ZCTA needs a ZIP-to-ZCTA crosswalk (future work); the 500 here are the codes the pipeline matched."
+  },
+  "access_tie_audit": {
+    "n_zero_supply_codes": 146,
+    "share_of_cohort": 0.349,
+    "distinct_supply_values": 273,
+    "access_score_of_zero_supply_codes": 0.8261,
+    "note": "All zero-supply codes receive the SAME access score, so the access-only ranking cannot order them -- any exact order within this block is arbitrary tie-breaking. They form one top priority GROUP, not a sequence. This is why we report broad tiers and treat the access-only top-N as a tied set."
+  },
+  "household_coverage_top_tier": {
+    "tier": 1,
+    "n_codes": 84,
+    "households_covered": 546288,
+    "renter_households_covered": 228241,
+    "label": "household coverage of identified priority areas",
+    "note": "Population living in the highest-priority ZCTAs -- COVERAGE of the identified priority areas, NOT households proven to gain charging access. Measuring actual access improvement requires a proposed station location and the households within a reasonable travel distance, which is the later H3 analysis."
+  },
+  "ranking_agreement": {
+    "spearman_rho_full_ranking": 0.5563,
+    "top_n_overlap": 4,
+    "in_baseline_top_not_composite": [
+      "80101",
+      "80106",
+      "80118",
+      "80131",
+      "80136",
+      "80137",
+      "80436",
+      "80451",
+      "80454",
+      "80455",
+      "80457",
+      "80467",
+      "80469",
+      "80478",
+      "80480",
+      "80481",
+      "80510",
+      "80515",
+      "80520",
+      "80535",
+      "80543",
+      "80610",
+      "80611",
+      "80615",
+      "80622",
+      "80624"
+    ],
+    "in_composite_top_not_baseline": [
+      "80010",
+      "80113",
+      "80218",
+      "80220",
+      "80231",
+      "80235",
+      "80247",
+      "80503",
+      "80521",
+      "80653",
+      "80726",
+      "80729",
+      "80820",
+      "80835",
+      "80840",
+      "80904",
+      "80915",
+      "80917",
+      "80925",
+      "80930",
+      "81019",
+      "81152",
+      "81155",
+      "81253",
+      "81430",
+      "81654"
+    ]
+  },
+  "equity_comparison": {
+    "cohort_overall": {
+      "n": 418,
+      "share_lower_income": 0.5,
+      "share_renter_heavy": 0.5,
+      "mean_income": 90164.0,
+      "mean_renter_share": 0.27,
+      "mean_adoption": 65.18,
+      "mean_ports_per_1000": 3.537
+    },
+    "access_only_tier1_full": {
+      "n": 167,
+      "share_lower_income": 0.635,
+      "share_renter_heavy": 0.335,
+      "mean_income": 82604.0,
+      "mean_renter_share": 0.223,
+      "mean_adoption": 41.74,
+      "mean_ports_per_1000": 0.036,
+      "note": "full access-only top tier (large, tie-driven)"
+    },
+    "access_only_zero_supply_group": {
+      "n": 146,
+      "share_lower_income": 0.637,
+      "share_renter_heavy": 0.308,
+      "mean_income": 81072.0,
+      "mean_renter_share": 0.21,
+      "mean_adoption": 37.35,
+      "mean_ports_per_1000": 0.0,
+      "note": "the entire tied zero-supply block the access method cannot order"
+    },
+    "composite_tier1_full": {
+      "n": 84,
+      "share_lower_income": 0.488,
+      "share_renter_heavy": 0.643,
+      "mean_income": 92701.0,
+      "mean_renter_share": 0.327,
+      "mean_adoption": 83.71,
+      "mean_ports_per_1000": 0.698,
+      "note": "full composite top tier"
+    },
+    "group_sizes": {
+      "access_only_tier1": 167,
+      "access_zero_supply_group": 146,
+      "composite_tier1": 84
+    },
+    "size_caveat": "The access-only top tier and composite top tier differ in size (tie collapse), so this is not a fixed-size comparison; shares are size-normalized but the groups are the methods' actual priority sets."
+  },
+  "fixed_size_top_n_comparison": {
+    "top_n": 30,
+    "composite_top_n": {
+      "n": 30,
+      "share_lower_income": 0.7,
+      "share_renter_heavy": 0.767,
+      "mean_income": 75353.0,
+      "mean_renter_share": 0.39,
+      "mean_adoption": 68.11,
+      "mean_ports_per_1000": 0.257
+    },
+    "access_only_top_n_over_tiebreaks": {
+      "share_lower_income_median": 0.633,
+      "share_lower_income_range": [
+        0.367,
+        0.867
+      ],
+      "share_renter_heavy_median": 0.3,
+      "share_renter_heavy_range": [
+        0.1,
+        0.5
+      ],
+      "note": "Access-only top-30 composition over 500 random tie-break orderings -- a RANGE, because the 30 are drawn from a large tied block and no single ordering is meaningful."
+    }
+  },
+  "weight_sensitivity": [
+    {
+      "emphasis": "demand_heavy",
+      "weights": {
+        "demand": 0.6,
+        "access": 0.2,
+        "equity": 0.2
+      },
+      "spearman_vs_base": 0.5532,
+      "top_n_overlap_with_base": 7,
+      "top_share_lower_income": 0.2,
+      "top_share_renter_heavy": 0.433,
+      "top_mean_income": 134295.0
+    },
+    {
+      "emphasis": "access_heavy",
+      "weights": {
+        "demand": 0.2,
+        "access": 0.6,
+        "equity": 0.2
+      },
+      "spearman_vs_base": 0.7794,
+      "top_n_overlap_with_base": 20,
+      "top_share_lower_income": 0.6,
+      "top_share_renter_heavy": 0.5,
+      "top_mean_income": 84266.0
+    },
+    {
+      "emphasis": "equity_heavy",
+      "weights": {
+        "demand": 0.2,
+        "access": 0.2,
+        "equity": 0.6
+      },
+      "spearman_vs_base": 0.6064,
+      "top_n_overlap_with_base": 15,
+      "top_share_lower_income": 0.967,
+      "top_share_renter_heavy": 1.0,
+      "top_mean_income": 58100.0
+    },
+    {
+      "emphasis": "equal_thirds",
+      "weights": {
+        "demand": 0.3333333333333333,
+        "access": 0.3333333333333333,
+        "equity": 0.3333333333333333
+      },
+      "spearman_vs_base": 0.9995,
+      "top_n_overlap_with_base": 29,
+      "top_share_lower_income": 0.733,
+      "top_share_renter_heavy": 0.8,
+      "top_mean_income": 72847.0
+    }
+  ],
+  "ranking_stability": {
+    "method": "200 bootstrap resamples (seed 42); components, scores and tiers recomputed per resample. Movement measured on a SCALE-INVARIANT percentile basis because a size-n draw keeps only ~63% distinct codes, so integer ranks would be on different-length lists and not comparable.",
+    "median_percentile_movement": 0.0239,
+    "median_movement_in_positions_of_418": 10.0,
+    "median_tier_retention_rate": 0.968,
+    "share_codes_tier_retention_ge_0.8": 0.773,
+    "most_unstable_zctas_by_percentile_movement": {
+      "80014": 0.0389,
+      "81055": 0.0386,
+      "80219": 0.0382,
+      "81131": 0.0376,
+      "80030": 0.0369,
+      "80906": 0.0367,
+      "80922": 0.0363,
+      "80903": 0.0358,
+      "80631": 0.0353,
+      "80446": 0.035
+    },
+    "consistency_note": "A median percentile movement of ~0.024 (about 10 positions out of 418) is consistent with the high tier retention: most codes stay within their tier because they move only a little. The previously reported \"76 positions\" was an artifact of comparing integer ranks across different-sized bootstrap lists and is corrected here."
+  }
+}

@@ -1,0 +1,168 @@
+{
+  "generated_utc": "2026-11-08T04:02:00.119440+00:00",
+  "purpose": "Pre-freeze diagnostics; read-only, does not alter the pipeline.",
+  "split": {
+    "n_train": 329,
+    "n_test": 89,
+    "test_zip3_groups": [
+      "806",
+      "811",
+      "812",
+      "816"
+    ],
+    "train_zip3_groups": [
+      "800",
+      "801",
+      "802",
+      "803",
+      "804",
+      "805",
+      "807",
+      "808",
+      "809",
+      "810",
+      "813",
+      "814",
+      "815"
+    ]
+  },
+  "check1_eda_reconciliation": {
+    "eda_full_union": {
+      "n": 1097,
+      "pearson_r": 0.244,
+      "r_squared": 0.0595,
+      "note": "matches eda_metrics.json income_vs_ev (full 1,161-code union)"
+    },
+    "cohort_in_sample": {
+      "n": 418,
+      "pearson_r": 0.7244,
+      "r_squared_in_sample": 0.5247,
+      "note": "Colorado cohort, households>=100; in-sample r^2 for income-only OLS"
+    },
+    "cohort_income_only_cv": {
+      "n_train": 329,
+      "pooled_out_of_fold_predictive_R2": 0.558,
+      "in_sample_R2_same_model": 0.5849,
+      "note": "pooled_out_of_fold_predictive_R2 is what regression_metrics reports; it is 1 - SSE/SST on held-out predictions, NOT the squared Pearson r. For a single-feature OLS the in-sample R2 equals r^2; the predictive R2 differs and on this filtered Colorado cohort is much higher than the full-union r^2."
+    },
+    "reconciliation": "The two numbers are different quantities on different populations. EDA r=0.24 -> r^2=0.058 is the squared Pearson correlation on the full 1,161-code union with the raw target. The 0.48 figure is pooled out-of-fold predictive R2 of an income-only model on the 418-code Colorado households>=100 cohort. Restricting to Colorado and removing tiny-denominator rate artifacts strengthens the income-adoption relationship, and predictive R2 is not the squared correlation. Both numbers are correct for what they measure; neither is an error."
+  },
+  "check2_nested_selection_audit": {
+    "candidate_own_outer_fold_MAE": {
+      "ridge_all_features": 27.575,
+      "ridge_income_renter": 27.118,
+      "rf_all_features": 26.657,
+      "rf_income_renter": 26.247
+    },
+    "winner_by_own_outer_fold_MAE": "rf_income_renter",
+    "winner_reported_MAE": 26.247,
+    "fully_nested_family_selection_MAE": 26.843,
+    "selection_bias_estimate": 0.596,
+    "inner_selected_family_per_outer_fold": "see console",
+    "verdict": "The winner MAE (picked as the min over candidates on their own outer-fold means) is compared to a fully nested procedure that selects the candidate INSIDE each outer-train block. The gap is the residual candidate-selection bias. A small gap means picking the best-of-k on outer scores barely inflates the reported number; we report the fully nested figure as the honest headline for the selection procedure."
+  },
+  "check3_test_by_zip3_group": {
+    "overall_test": {
+      "random_forest_2feat": {
+        "MAE": 23.012,
+        "RMSE": 34.593,
+        "R2": 0.134
+      },
+      "ridge_4feat": {
+        "MAE": 28.216,
+        "RMSE": 40.53,
+        "R2": -0.188
+      },
+      "mean_baseline": {
+        "MAE": 41.573,
+        "RMSE": 45.864,
+        "R2": -0.522
+      }
+    },
+    "per_zip3_group": {
+      "806": {
+        "n": 22,
+        "adoption_median": 41.25,
+        "adoption_min": 9.62,
+        "adoption_max": 164.29,
+        "MAE_rf": 22.01,
+        "MAE_ridge": 28.95,
+        "MAE_mean": 32.86,
+        "R2_rf": -0.395
+      },
+      "811": {
+        "n": 25,
+        "adoption_median": 15.89,
+        "adoption_min": 6.52,
+        "adoption_max": 65.81,
+        "MAE_rf": 12.77,
+        "MAE_ridge": 18.8,
+        "MAE_mean": 50.0,
+        "R2_rf": -0.726
+      },
+      "812": {
+        "n": 18,
+        "adoption_median": 30.35,
+        "adoption_min": 8.7,
+        "adoption_max": 97.29,
+        "MAE_rf": 22.78,
+        "MAE_ridge": 28.9,
+        "MAE_mean": 34.95,
+        "R2_rf": -2.653
+      },
+      "816": {
+        "n": 24,
+        "adoption_median": 60.66,
+        "adoption_min": 4.45,
+        "adoption_max": 146.6,
+        "MAE_rf": 34.77,
+        "MAE_ridge": 36.85,
+        "MAE_mean": 45.75,
+        "R2_rf": 0.336
+      }
+    },
+    "adoption_distribution": {
+      "train": {
+        "n": 329,
+        "median": 51.36,
+        "mean": 70.9,
+        "p90": 150.49
+      },
+      "test": {
+        "n": 89,
+        "median": 29.97,
+        "mean": 44.05,
+        "p90": 109.67
+      }
+    },
+    "rf_beats_mean_on_test_MAE": true
+  },
+  "check4_paired_folds": {
+    "four_feature_fold_MAEs": [
+      26.551,
+      24.812,
+      30.366,
+      25.069,
+      26.486
+    ],
+    "two_feature_fold_MAEs": [
+      28.43,
+      24.327,
+      26.892,
+      26.0,
+      25.584
+    ],
+    "per_fold_diff_4f_minus_2f": [
+      -1.879,
+      0.485,
+      3.474,
+      -0.931,
+      0.902
+    ],
+    "mean_diff": 0.41,
+    "two_feature_better_in_folds": 3,
+    "paired_t_pvalue": 0.6765,
+    "wilcoxon_pvalue": 1.0,
+    "verdict": "The two-feature model is NOT significantly better on paired folds; the ~0.4 MAE gap is within fold noise. It is selected for being as accurate while simpler and more consistent (lower fold std), not for a proven accuracy edge."
+  }
+}

@@ -357,9 +357,16 @@ Reproducible path: <code>pip install -r requirements.txt</code>, then <code>pyth
 <section id="models" class="section">
 <div class="container narrow">
 <p class="section-kicker">Milestone 3 · Models &amp; Evaluation</p>
-<h2>Modeling EV adoption and surfacing underserved areas</h2>
+<h2>Identifying where new charging would help most</h2>
 <p>
-We apply two complementary data-mining tasks to the Milestone 2 analysis table, scoped to Colorado ZCTA codes. <strong>Regression</strong> asks how far community socioeconomics explain EV adoption (RQ1); <strong>K-Means clustering</strong> groups communities into profiles and screens for areas with demonstrated demand but thin public charging supply (RQ4). All numbers below come directly from the reproducible scripts (<code>src/prepare_modeling.py</code>, <code>src/train_regression.py</code>, <code>src/cluster_communities.py</code>), not hand entry.
+This milestone serves two distinct questions, and we keep them separate on purpose:
+</p>
+<ul class="clean-list">
+<li><strong>Primary (planning) question:</strong> which Colorado communities may benefit most from additional public EV charging? Answered by K-Means community profiles and a transparent ZCTA-level <strong>charging-need ranking</strong>.</li>
+<li><strong>Supporting question:</strong> how do socioeconomic factors relate to <em>existing</em> EV adoption? Answered by the regression models — useful as one piece of demand <em>evidence</em>, not as the planning objective.</li>
+</ul>
+<p>
+The distinction matters for equity. A model of <em>current</em> ownership favors communities where adoption is already strong (higher-income areas), so we never let predicted adoption drive the need ranking — the ranking uses <em>observed</em> demand alongside separate access and equity components. All numbers below come directly from reproducible scripts (<code>src/prepare_modeling.py</code>, <code>src/train_regression.py</code>, <code>src/experiment_harness.py</code>, <code>src/cluster_communities.py</code>, <code>src/rank_need.py</code>), not hand entry.
 </p>
 
 <h3>Modeling plan and why these methods</h3>
@@ -408,13 +415,51 @@ The mean predictor confirms the baseline is honest (R² ≈ 0). <strong>Income a
 To choose among modeling options defensibly — rather than hand-picking the best-looking score — we ran a <strong>bounded, seeded experiment harness</strong> (<code>src/experiment_harness.py</code>). It evaluates a predeclared set of candidates (feature subsets, preprocessing strategies like log-transforming skewed size features and mean-vs-median imputation, and Ridge/Random Forest hyperparameter grids) through the <em>same</em> nested protocol, and logs every experiment — configuration, features, parameters, seed, git commit, nested metrics, fold variability, and subgroup error — to <code>results/experiments.csv</code>, each marked selected or rejected. The target, geographic groups, held-out test set, data-quality rules, and metric are fixed and cannot be changed by an experiment; every candidate passes the leakage guard before it runs.
 </p>
 <p>
-Selection is <strong>MAE-first with equity and stability tie-breakers</strong>: among candidates within 1 MAE unit of the best (not meaningfully different), prefer lower fold-to-fold variability, then more even subgroup performance. Baselines are references and cannot win. The procedure selected a <strong>two-feature (income + renter share) Random Forest</strong> — it matched the four-feature forest on MAE (26.2) while being the most consistent across geographic folds (±1.4, the lowest of any candidate), a simpler and steadier model. After selection finished, the held-out test set was scored <strong>once</strong>: MAE 23.0, confirming the nested estimate was not optimistic.
+Selection is <strong>MAE-first with equity and stability tie-breakers</strong>: among candidates within 1 MAE unit of the best (not meaningfully different), prefer lower fold-to-fold variability, then more even subgroup performance. Baselines are references and cannot win. The procedure selected a <strong>two-feature (income + renter share) Random Forest</strong> — statistically indistinguishable from the four-feature forest on accuracy (see below) while being the most consistent across geographic folds (±1.4, the lowest of any candidate), so it is preferred on <em>parsimony</em>, not on a proven accuracy edge.
+</p>
+<p>
+<strong>Honest procedure-level MAE.</strong> Picking the winner as the lowest of several candidates' outer-fold scores is itself a selection step, so the winner's own nested MAE (26.2) is mildly optimistic. We therefore also ran a <em>fully nested</em> procedure that re-selects the best candidate inside each outer fold: it gives <strong>MAE 26.84 (±1.9)</strong>, a residual selection bias of about <strong>+0.6 MAE</strong>. We report <strong>26.84 as the procedure-level headline</strong> and keep 26.2 only as the selected candidate's own figure. Tellingly, the fully nested procedure picked the four-feature forest in 4 of 5 folds and the two-feature forest in 1 — further evidence the two are near-interchangeable.
+</p>
+<p>
+<strong>Are the two-feature and four-feature forests really different?</strong> The evidence does not show a difference. On the five paired outer folds the mean MAE gap is 0.41 (two-feature better in 3 of 5 folds), and a paired t-test (p = 0.68) and Wilcoxon test (p = 1.0) find no significant difference. With only five folds these tests also cannot <em>establish equivalence</em> — they simply fail to show one model is better. We therefore do not claim the two-feature model is more accurate; we prefer it for parsimony (fewer inputs, lower fold variance) while treating the two as effectively interchangeable on the current evidence.
 </p>
 <figure class="context-figure">
 <div class="visual-title">Experiment comparison (nested CV, fold-std error bars)</div>
 <img src="results/figures/experiments_mae.png" alt="Horizontal bar chart of nested cross-validation MAE for every logged experiment with fold-standard-deviation error bars, the selected two-feature Random Forest highlighted." />
 <figcaption>Every logged candidate on one protocol; the selected two-feature Random Forest is highlighted. Full record in <code>results/experiments.csv</code> and <code>results/best_config.json</code>.</figcaption>
 </figure>
+
+<h3>Held-out test by geographic group</h3>
+<p>
+The one-time held-out test (4 whole ZIP3 groups, 89 codes, scored once) gives MAE 23.0, RMSE 34.6, R² 0.13. The MAE confirms the nested estimate held, but the low R² needs context, so we examined it by group rather than waving it away:
+</p>
+<ul class="clean-list">
+<li>The held-out groups happen to be <strong>low-adoption, low-variance</strong> areas (test adoption median ≈ 30 vs. training ≈ 51). R² is a ratio to the variance present, so it looks poor wherever there is little variance to explain — even when predictions are good.</li>
+<li>Where it matters, the model <strong>clearly beats the mean baseline on every held-out group</strong>: test MAE 23.0 vs. the baseline's 41.6 (e.g. group 811, MAE 12.8 vs. 50.0). So the model generalizes; the low R² is a property of the test slice, not a failure of the model.</li>
+</ul>
+<p class="note">
+This is why we report the nested outer-fold mean (26.8 MAE) as the headline and treat the single grouped test as a one-time confirmation — with only ~17 Colorado ZIP3 groups, one held-out slice is inherently high-variance.
+</p>
+
+<h3>Reconciling the earlier EDA correlation</h3>
+<p>
+Milestone 2 reported an income–adoption correlation of r ≈ 0.24 (so r² ≈ 0.06), which looks inconsistent with the income-only model's cross-validated R² ≈ 0.48–0.56. They are different quantities on different populations, and both are correct:
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Measure</th><th>Population</th><th>n</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td>Pearson r (r²)</td><td>Full 1,161-code union, raw target</td><td>1,097</td><td>0.244 (r² 0.06)</td></tr>
+<tr><td>Pearson r (r²)</td><td>Colorado cohort, households ≥ 100</td><td>418</td><td><strong>0.724 (r² 0.52)</strong></td></tr>
+<tr><td>Pooled out-of-fold predictive R²</td><td>Colorado cohort (income-only CV)</td><td>329</td><td>0.56</td></tr>
+</tbody>
+</table>
+</div>
+<p>
+The gap is almost entirely the <strong>population</strong>: the full union is dominated by out-of-state registration-ZIP codes with a single EV, which wash out the relationship. Restricting to Colorado and removing tiny-denominator rate artifacts raises the income–adoption correlation from 0.24 to 0.72. (A secondary point: cross-validated <em>predictive</em> R² is not the squared Pearson correlation; the two coincide only for an in-sample single-feature OLS.) Reconciliation details are in <code>data/processed/diagnostics_m3.json</code>.
+</p>
 
 <h3>Equity: does the model work across Colorado communities?</h3>
 <p>
@@ -495,12 +540,70 @@ K-Means over 418 Colorado codes (adoption rate, income, renter share, and verifi
 <strong>Candidate underserved areas (RQ4).</strong> We flag a code as a <em>candidate</em> underserved area when it has <strong>demonstrated demand</strong> (adoption at or above the cohort median) together with <strong>thin public supply</strong> (ports per 1,000 households at or below the cohort median) — <em>low supply alone is not an underserved verdict.</em> This screens <strong>76 Colorado codes</strong>, of which <strong>25 also carry an equity flag</strong> (below-median income or above-median renter share). They concentrate in the high-adoption suburbs (cluster 1) and the mid-income mainstream (cluster 2). The full shortlist is in <code>data/processed/candidate_underserved_zctas.csv</code>.
 </p>
 
+<h3>ZCTA charging-need ranking (the planning track)</h3>
+<p>
+The clustering screen is binary; to prioritize, we built a transparent <strong>need ranking</strong> (<code>src/rank_need.py</code>) and compared two predefined approaches over the 418 Colorado codes. Scores use percentile normalization (robust to the heavy-tailed supply distribution) and fixed, documented weights — never tuned against the ranking they produce.
+</p>
+<ul class="clean-list">
+<li><strong>Approach 1 — access-only baseline:</strong> rank by public-charging scarcity per household. Simple, but <em>low supply alone does not prove high need</em> — a low-demand, well-off area can have little supply and little need.</li>
+<li><strong>Approach 2 — demand + equity + access composite:</strong> three <em>separate</em> components, each normalized then combined. Demand is <strong>observed</strong> adoption (never the regression prediction, so the ranking cannot be steered toward already-wealthy areas); access is charging scarcity; equity blends renter share and lower income.</li>
+</ul>
+<p>
+The two rankings disagree substantially (Spearman ρ = 0.56). We compare them <strong>tie-aware</strong>, by each method's full priority group rather than an arbitrary top-30 (see the note on ties below), looking at the share that is lower-income or renter-heavy relative to cohort medians:
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>Priority group (full)</th><th>n</th><th>Share lower-income</th><th>Share renter-heavy</th><th>Mean income</th></tr>
+</thead>
+<tbody>
+<tr><td>Cohort overall (reference)</td><td>418</td><td>0.50</td><td>0.50</td><td>$90k</td></tr>
+<tr><td>Access-only — tied zero-supply group</td><td>146</td><td>0.64</td><td>0.31</td><td>$81k</td></tr>
+<tr><td>Composite — top tier</td><td>84</td><td>0.49</td><td><strong>0.64</strong></td><td>$93k</td></tr>
+</tbody>
+</table>
+</div>
+<p>
+<strong>A trade-off between equity definitions, not a uniform improvement.</strong> The composite top tier is distinctly more <strong>renter-heavy</strong> than the access-only zero-supply group (0.64 vs 0.31), but it is slightly <em>less</em> lower-income (0.49 vs 0.64). So the composite does not improve every equity measure at once — it shifts priority toward renter-heavy communities, where the lack of home charging makes public charging most valuable, at the cost of a lower low-income share than pure charging scarcity would select. Which ranking is "more equitable" depends on which definition of need a planner adopts; the project reports both rather than claiming one dominates. The groups differ in size (146 vs 84), so shares are compared, not counts.
+</p>
+<figure class="context-figure">
+<div class="visual-title">12 · How the need ranking shifts with equity + demand</div>
+<img src="figures/12_need_ranking_shift.png" alt="Scatter of each ZCTA's access-only rank against its composite rank, colored by equity component; points off the diagonal are areas whose priority changes substantially." />
+<figcaption>Each point is a ZCTA; distance from the diagonal shows how much its priority changes when demand and equity are added to pure charging scarcity. Higher-equity areas (brighter) tend to rise.</figcaption>
+</figure>
+<figure class="context-figure">
+<div class="visual-title">13 · Equity composition under different weightings</div>
+<img src="figures/13_need_ranking_equity.png" alt="Grouped bars of the lower-income and renter-heavy share of the top-ranked set for the baseline, composite, and demand/access/equity-heavy weightings." />
+<figcaption>
+<strong>Weight sensitivity.</strong> Emphasizing <em>demand</em> pushes the top set toward wealthier areas (mean income $134k) — the failure mode an adoption-only ranking would cause. Emphasizing <em>equity</em> pushes it to 97% lower-income, 100% renter-heavy (mean income $58k). The base weights sit in between, and an equal-thirds weighting is nearly identical to the base (ρ = 0.999), so the choice is not knife-edge.
+</figcaption>
+</figure>
+<p>
+<strong>Broad tiers, not exact ranks.</strong> We report five broad priority <strong>tiers</strong> (1 = highest need) rather than a precise order. Bootstrap resampling (recomputing scores and tiers on each resample) shows a code's priority moves only a little — a median <strong>percentile movement of 0.024, about 10 of 418 positions</strong> — and <strong>tier membership is stable at 0.97 retention</strong>. The two figures agree: codes stay in their tier because they move little. (An earlier draft reported "76 positions"; that was an artifact of comparing integer ranks across different-sized bootstrap lists — a with-replacement draw keeps only ~63% of codes — and has been corrected to the scale-invariant percentile measure.)
+</p>
+<p>
+<strong>What "0.97 retention" does and does not mean.</strong> It is a measure of <em>stability under the chosen bootstrap procedure</em> — how often a ZCTA keeps its tier when the cohort is resampled — and nothing more. It is <em>not</em> a 97% probability that the identified areas are the correct places for a station; the ranking carries no such guarantee, and no ZCTA is called the objectively best site without observed installation and utilization outcomes. For reproducibility, the procedure is fixed and recorded in <code>need_ranking_report.json</code>: <strong>200 bootstrap resamples</strong> of the 418-code cohort (with replacement, seed 42); for each resample the three components, the composite score, and the five tiers are <strong>recomputed from scratch</strong>; a resampled ZCTA is matched to its original by its 5-digit code, duplicate draws of the same code are averaged within the resample; movement is measured as the change in <em>percentile</em> rank (scale-invariant, so unequal resample sizes do not distort it) and tier retention as the share of resamples in which the code keeps its base tier.
+</p>
+<p>
+<strong>Coverage audit — who cannot be ranked.</strong> Of the 500 Colorado codes, <strong>418 are rankable and 82 are not</strong> (missing income/household data or a household count below the stability floor of 100). This matters for equity: the un-rankable codes are mostly tiny and rural, and <strong>74% of them have no public charging station</strong> versus 35% of the rankable cohort — so they may be <em>more</em> under-served, not less. They are reported as a separate "cannot score from available data" group, never silently dropped. Enumerating every true Colorado Census ZCTA needs a ZIP-to-ZCTA crosswalk (future work).
+</p>
+<p>
+<strong>Access-score ties — why we do not report an access-only top-30.</strong> <strong>146 of 418 codes (35%) have exactly zero public supply</strong>, so under the access-only method they all receive the <em>same</em> score. Selecting a "top 30" from that tied block is arbitrary: across 500 random tie-break orderings, the top-30's lower-income share ranges from <strong>0.37 to 0.87</strong> and its renter-heavy share from 0.10 to 0.50 — the number depends entirely on which 30 of the tied codes you happen to pick. That is why we report the <em>entire</em> tied group (above) and broad tiers, never an arbitrary access-only top-30.
+</p>
+<p>
+<strong>Demand ≠ unmet charging demand.</strong> The demand component is <em>observed</em> residential adoption, which measures existing ownership, not unmet need for <em>public</em> charging. A low-ownership, renter-heavy area with little home charging could benefit greatly from public charging. Because access and equity carry two-thirds of the composite weight, the score does <em>not</em> require high ownership — a low-ownership, renter-heavy, low-income, zero-supply community can still reach the top tier, and the equity-weighted variant strengthens that further.
+</p>
+<p>
+<strong>Household coverage of identified priority areas.</strong> The highest-priority tier (84 codes) contains roughly <strong>546,000 households (~228,000 renter households)</strong>. This is the population <em>living in</em> the identified priority areas — it is <em>not</em> a count of households proven to gain charging access. Measuring actual access improvement needs a proposed station location and the households within a reasonable travel distance, which is the job of the later H3 analysis. The full ranking, both tier columns, stability, and all component values are in <code>data/processed/need_ranking.csv</code>; assumptions, weights, the coverage audit, the tie audit, and the tie-aware comparison are in <code>need_ranking_report.json</code>.
+</p>
+
 <h3>Interpretation, limitations, and what this does not prove</h3>
 <ul class="clean-list">
 <li><strong>Descriptive, not causal.</strong> Income predicts adoption well, but this is association from a ZIP↔ZCTA proxy join across mixed time periods — not evidence that raising income causes EV adoption.</li>
-<li><strong>Equity caveat.</strong> A model trained on <em>current</em> ownership partly encodes existing income inequality. A priority ranking that simply chases predicted demand would reinforce it, so the underserved screen weighs demand and equity together, not demand alone.</li>
+<li><strong>Equity caveat, handled explicitly.</strong> A model of <em>current</em> ownership encodes existing income inequality — a demand-only ranking pushes the top set to a mean income of $134k (shown above). That is exactly why the need ranking uses observed demand as only one of three separate components, and why the equity-weighted ranking is reported alongside it.</li>
+<li><strong>Ranks are candidate flags, not verdicts.</strong> Individual ZCTA need ranks move substantially under resampling, and no observed station-outcome data exists, so no code can be called the objectively best site. The ranking narrows where to look next.</li>
 <li><strong>Geography is a proxy.</strong> The 80/81 prefix and ZIP3 grouping approximate Colorado membership and spatial structure; ZCTA polygons or a ZIP-to-county crosswalk would be the accurate upgrade.</li>
-<li><strong>These feed, but do not settle, the H3 map.</strong> Regression and clustering are supporting evidence for the eventual site-priority layer. Road access, land use, charger coverage, and electrical-infrastructure capacity still need separate assessment before any construction claim.</li>
+<li><strong>Next stage (future work, not Milestone 3 results).</strong> Site-level analysis — <strong>H3 resolution 10</strong> candidate cells, road accessibility, proximity to existing chargers, substation proximity, and land-use suitability — requires spatial data the repository does not yet hold. Regression, clustering, and the ZCTA need ranking are the <em>community-need</em> inputs to that layer; feasibility screening is a separate step before any construction claim.</li>
 </ul>
 <p class="note">
 Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/prepare_modeling.py</code> → <code>python src/train_regression.py</code> → <code>python src/cluster_communities.py</code> regenerate every metric and figure (06–11). Offline checks: <code>python -m unittest discover -s tests</code>. See the repository <code>README.md</code>.
