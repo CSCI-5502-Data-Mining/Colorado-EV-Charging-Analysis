@@ -29,6 +29,13 @@ Approved Milestone 0 question: *What factors are associated with EV adoption in 
 - Colorado Information Marketplace — [Charging station map](https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7)
 - U.S. Census Bureau ACS 5-year estimates — added after Milestone 0 for income/housing context; tables used: `B01003_001E` (population), `B19013_001E` (median household income), `B25003_001E` (occupied households), `B25003_003E` (renter-occupied) — [ACS 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html)
 
+The four sources above are the **original Milestone 2 source list**. The Milestone 3 supporting analysis (urban/rural + affordability) added two more official Census tables, fetched from the Census APIs on **2026-11-08** at national ZCTA geography (filtered to Colorado):
+
+- U.S. Census Bureau **2020 Decennial DHC, Table P2 (urban/rural population)** — variables `P2_001N`/`P2_002N`/`P2_003N`; endpoint `https://api.census.gov/data/2020/dec/dhc`; 33,774 ZCTA rows (477 of 500 Colorado codes matched)
+- U.S. Census Bureau **ACS 2024 5-year, Table B25070 (gross rent as % of household income)** — variables `B25070_001E` + `007E`–`010E` (with `011E` "not computed" excluded from the denominator); endpoint `https://api.census.gov/data/2024/acs/acs5`; 33,772 ZCTA rows (437 of 500 Colorado codes matched)
+
+**Join limitation:** both match on the 5-digit ZCTA code (ZIP↔ZCTA proxy), and the vintages differ (2020 Census vs 2020–2024 ACS vs 2026 EV/station snapshots), so comparisons are descriptive. Full provenance in [`docs/provenance.csv`](docs/provenance.csv); raw-fetch record in `data/raw/urban_affordability_provenance.json`.
+
 Acquisition instructions: [`data/README.md`](data/README.md). Do not commit secrets, credentials, or restricted raw extracts.
 
 ## Reproduce the Milestone 2 analysis

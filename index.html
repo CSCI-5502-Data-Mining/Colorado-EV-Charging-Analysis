@@ -255,7 +255,17 @@ We assembled a reproducible dataset from three public sources and explored it be
 
 <h3>Data sources and provenance</h3>
 <p>
-Colorado EV registrations come from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level). A full provenance table source, URL, license, geography, time coverage, raw size, and unit of observation is in <code>docs/provenance.csv</code>, and every analysis column is defined in <code>docs/data_dictionary.csv</code>.
+The <strong>original Milestone 2 sources</strong> were: Colorado EV registrations from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level, tables B01003/B19013/B25003).
+</p>
+<p>
+<strong>Added for the Milestone 3 supporting analysis</strong> (urban/rural and affordability), both pulled from the official Census APIs on <strong>2026-11-08</strong> at national ZCTA geography and filtered to Colorado:
+</p>
+<ul class="clean-list">
+<li><strong>Census 2020 DHC, Table P2 (urban/rural population)</strong> — endpoint <code>https://api.census.gov/data/2020/dec/dhc</code>, variables P2_001N/P2_002N/P2_003N, 33,774 national ZCTA rows; 477 of 500 Colorado codes matched (23 unmatched, mostly small/rural).</li>
+<li><strong>ACS 2024 5-year, Table B25070 (renter cost burden)</strong> — endpoint <code>https://api.census.gov/data/2024/acs/acs5</code>, variables B25070_001E and 007E–010E (with 011E "not computed" excluded from the denominator), 33,772 national ZCTA rows; 437 of 500 Colorado codes matched.</li>
+</ul>
+<p>
+<strong>Join limitation:</strong> both are matched on the 5-digit ZCTA code, so the ZIP↔ZCTA caveat and the different data vintages (2020 Census vs 2020–2024 ACS vs 2026 EV/station snapshots) apply; comparisons are descriptive. A full provenance table — source, URL, license, geography, time coverage, raw size, and unit of observation — is in <code>docs/provenance.csv</code>, every analysis column is defined in <code>docs/data_dictionary.csv</code>, and the raw-fetch record is in <code>data/raw/urban_affordability_provenance.json</code>.
 </p>
 
 <h3>Dataset and cleaning decisions</h3>
