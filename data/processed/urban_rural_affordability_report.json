@@ -1,0 +1,120 @@
+{
+  "generated_utc": "2026-11-08T08:18:50.948375+00:00",
+  "git_commit": "4504f97",
+  "input": "data/processed/modeling_colorado.csv",
+  "n_colorado": 500,
+  "thresholds": {
+    "urban_dominant_min_urban_share": 0.8,
+    "rural_dominant_max_urban_share": 0.2
+  },
+  "join": {
+    "colorado_zctas": 500,
+    "dhc_matched": 477,
+    "dhc_unmatched": 23,
+    "b25070_matched": 437
+  },
+  "classification_counts": {
+    "urban_dominant": 165,
+    "mixed": 54,
+    "rural_dominant": 258,
+    "unclassified_dhc_unmatched": 23,
+    "reconciliation": "urban_dominant + mixed + rural_dominant + unclassified = colorado_zctas (500); the 23 unclassified are exactly the DHC-unmatched ZCTAs, mostly small/rural codes also flagged in the ranking coverage audit."
+  },
+  "limitation": "ZCTA-level comparison of urban-dominant vs rural-dominant areas by Census-2020 urban population share -- NOT point-in-polygon classification of each charger. Mixed ZCTAs are reported as their own class. Full geospatial classification is the later H3 stage.",
+  "vintages": {
+    "urban_rural_classification": "2020 Decennial Census DHC (P2)",
+    "renter_cost_burden": "2024 ACS 5-year (B25070, covers 2020-2024)",
+    "households_denominator": "2024 ACS 5-year B25003 (from the frozen modeling table)",
+    "ev_registrations": "Atlas latest DMV snapshot 2026-07-07",
+    "charging_stations": "AFDC 2026-10-15 download",
+    "vintage_caveat": "These sources span different years and collection methods. The urban/rural split is from the 2020 Census point-in-time, while households, income, and renter cost burden are 2020-2024 ACS estimates, and EV/station data are 2026 snapshots. Comparisons are descriptive; a ZCTA's urban share could have shifted since 2020."
+  },
+  "charging_by_urban_class": {
+    "urban_dominant": {
+      "n_zctas": 165,
+      "n_zctas_usable_supply": 164,
+      "households_total": 1884457,
+      "density_method": "AGGREGATE: sum(ports over the class) / sum(households over the class) * 1000, so large and small ZCTAs are weighted by their household counts (NOT an unweighted mean of per-ZCTA ratios).",
+      "ports_per_1000_hh_all": 3.36,
+      "ports_per_1000_hh_l2": 2.683,
+      "ports_per_1000_hh_dcfc": 0.648,
+      "ports_per_1000_hh_all_unweighted_mean_for_contrast": 4.283,
+      "share_zero_supply": 0.098,
+      "share_zero_supply_by_household_floor": {
+        "0": 0.098,
+        "100": 0.086,
+        "500": 0.081
+      },
+      "median_urban_share": 0.997
+    },
+    "mixed": {
+      "n_zctas": 54,
+      "n_zctas_usable_supply": 54,
+      "households_total": 301381,
+      "density_method": "AGGREGATE: sum(ports over the class) / sum(households over the class) * 1000, so large and small ZCTAs are weighted by their household counts (NOT an unweighted mean of per-ZCTA ratios).",
+      "ports_per_1000_hh_all": 3.252,
+      "ports_per_1000_hh_l2": 2.346,
+      "ports_per_1000_hh_dcfc": 0.906,
+      "ports_per_1000_hh_all_unweighted_mean_for_contrast": 3.581,
+      "share_zero_supply": 0.204,
+      "share_zero_supply_by_household_floor": {
+        "0": 0.204,
+        "100": 0.204,
+        "500": 0.189
+      },
+      "median_urban_share": 0.695
+    },
+    "rural_dominant": {
+      "n_zctas": 258,
+      "n_zctas_usable_supply": 254,
+      "households_total": 184531,
+      "density_method": "AGGREGATE: sum(ports over the class) / sum(households over the class) * 1000, so large and small ZCTAs are weighted by their household counts (NOT an unweighted mean of per-ZCTA ratios).",
+      "ports_per_1000_hh_all": 3.154,
+      "ports_per_1000_hh_l2": 1.956,
+      "ports_per_1000_hh_dcfc": 1.198,
+      "ports_per_1000_hh_all_unweighted_mean_for_contrast": 3.132,
+      "share_zero_supply": 0.642,
+      "share_zero_supply_by_household_floor": {
+        "0": 0.642,
+        "100": 0.597,
+        "500": 0.418
+      },
+      "median_urban_share": 0.0
+    }
+  },
+  "interpretation_notes": {
+    "dcfc_corridor_hypothesis": "Higher DC-fast density toward rural ZCTAs is a POSSIBLE interpretation (highway-corridor fast charging rather than neighborhood Level 2), NOT a verified geographic finding: this analysis does not locate chargers relative to highways or confirm corridor placement. It would need station coordinates and road data (the H3 stage) to verify.",
+    "zero_supply_sensitivity": "The rural zero-supply share softens with a minimum-household floor (see share_zero_supply_by_household_floor): the DIRECTION of the finding is robust (rural ZCTAs are far more likely to lack public charging at every floor), but the MAGNITUDE of the headline 64% is partly driven by very small rural ZCTAs (rural median ~442 households). Report it as a coverage gap, not a precise rate."
+  },
+  "renter_cost_burden": {
+    "definition": "share of renter households paying >=30% of income on gross rent (ACS B25070 buckets 007-010), excluding the \"not computed\" category (011) from the denominator",
+    "statistic_labels": "median_across_zctas = unweighted median of per-ZCTA shares (a typical ZCTA); household_weighted_estimate = sum(burdened renters)/sum(rent-computed renters) (a typical renter household statewide). The \"51%\" headline is the median_across_zctas; the household-weighted statewide estimate is ~53%.",
+    "colorado_overall": {
+      "n_zctas": 437,
+      "median_across_zctas": 0.511,
+      "mean_across_zctas": 0.498,
+      "household_weighted_estimate": 0.529
+    },
+    "by_urban_class": {
+      "urban_dominant": {
+        "n_zctas": 163,
+        "median_across_zctas": 0.542,
+        "mean_across_zctas": 0.535,
+        "household_weighted_estimate": 0.533
+      },
+      "mixed": {
+        "n_zctas": 54,
+        "median_across_zctas": 0.507,
+        "mean_across_zctas": 0.492,
+        "household_weighted_estimate": 0.523
+      },
+      "rural_dominant": {
+        "n_zctas": 220,
+        "median_across_zctas": 0.454,
+        "mean_across_zctas": 0.473,
+        "household_weighted_estimate": 0.455
+      }
+    },
+    "moe_note": "ACS 5-year estimates carry margins of error that are proportionally larger for small renter populations; per-ZCTA shares for tiny areas are noisy and should be read as indicative, not precise."
+  }
+}

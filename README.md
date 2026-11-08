@@ -118,6 +118,16 @@ python src/cluster_communities.py
 #     need_ranking.csv, need_ranking_report.json, and figures 12-13.
 python src/rank_need.py
 
+# 3d. Supporting descriptive analysis (urban/rural + renter affordability).
+#     Separate from the frozen models. First fetch two official Census tables
+#     (needs a free CENSUS_API_KEY in .env; never printed/committed):
+#       - 2020 DHC P2 urban/rural population, ACS 2024 B25070 renter cost burden
+python src/fetch_urban_affordability.py
+#     Then classify CO ZCTAs (urban-dominant/mixed/rural-dominant by Census 2020
+#     urban share) and compare ports/1,000 hh (all/L2/DCFC) + renter cost
+#     burden. Writes urban_rural_affordability.csv + report and figures 14-15.
+python src/urban_rural_affordability.py
+
 # 3c. (optional) Pre-freeze diagnostics: reconcile the EDA correlation with the
 #     regression R2, audit nested-CV selection bias, held-out test by ZIP3
 #     group, and paired-fold comparison of the two Random Forests. Read-only;
@@ -137,6 +147,8 @@ Milestone 3 outputs (regenerated, not committed as raw data):
 - `data/processed/cluster_assignments.csv`, `cluster_profiles.json`, `candidate_underserved_zctas.csv`
 - `data/processed/need_ranking.csv`, `need_ranking_report.json` — ZCTA need ranking (both approaches), priority tiers, weights, sensitivity, scale-invariant percentile + tier stability, the 500→418 coverage audit, the access-tie audit, a tie-aware full-priority-group comparison, and household coverage of the top tier
 - `data/processed/diagnostics_m3.json` — the four pre-freeze diagnostic checks
+- `data/processed/urban_rural_affordability.csv`, `…_report.json` — supporting analysis: Census-2020 urban/rural classification, ports/1,000 hh (all/L2/DCFC) by class, and ACS B25070 renter cost burden (raw Census extracts are gitignored under `data/raw/`; provenance in `data/raw/urban_affordability_provenance.json`)
+- `figures/14_urban_rural_ports.png`, `figures/15_renter_cost_burden.png`
 - `results/experiments.csv`, `results/best_config.json`, `results/figures/*.png` — the experiment log, run summary (incl. the fully-nested procedure MAE), and harness figures (see [`results/README.md`](results/README.md))
 - `figures/06_model_comparison.png` … `figures/13_need_ranking_equity.png`
 

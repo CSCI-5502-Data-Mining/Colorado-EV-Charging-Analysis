@@ -267,6 +267,52 @@ Figures: `12_need_ranking_shift.png`, `13_need_ranking_equity.png`. Data:
 `need_ranking.csv` (incl. `tier_composite`, `tier_baseline`, stability columns),
 `need_ranking_report.json`.
 
+## Urban vs. rural charging and renter affordability (supporting questions)
+
+Separate descriptive analysis (`src/fetch_urban_affordability.py` →
+`src/urban_rural_affordability.py`), frozen models untouched. Two official
+Census tables joined to the Colorado ZCTAs: 2020 DHC P2 (urban/rural population)
+and ACS 2024 B25070 (renter cost burden).
+
+Each ZCTA is classified by its Census-2020 **urban population share**:
+urban-dominant (≥80%), rural-dominant (≤20%), or mixed. This is a ZCTA-level
+comparison, **not** point-in-polygon classification of each charger — a ZCTA can
+straddle the urban boundary, so "mixed" is its own class. Full geospatial
+classification is the later H3 stage.
+
+| ZCTA urban class | n | All ports /1k | L2 /1k | DC fast /1k | Share zero supply |
+|---|---:|---:|---:|---:|---:|
+| Urban-dominant | 165 | 3.36 | 2.68 | 0.65 | **0.10** |
+| Mixed | 54 | 3.25 | 2.35 | 0.91 | 0.20 |
+| Rural-dominant | 258 | 3.15 | 1.96 | 1.20 | **0.64** |
+
+Classification reconciles: 165 urban-dominant + 54 mixed + 258 rural-dominant +
+23 unclassified (DHC-unmatched) = 500. Density is **household-weighted**
+(sum ports / sum households, not an average of per-ZCTA ratios).
+
+**RQ3 answer.** Total density is similar across classes, but Level 2 falls and
+DC fast rises toward rural, and the sharp contrast is coverage: **10% of
+urban-dominant ZCTAs have no public charging vs 64% of rural-dominant**.
+*Sensitivity:* the 64% softens to ~60% (≥100 households) and ~42% (≥500) because
+many rural ZCTAs are very small (median ~442 households); the direction is robust
+but the magnitude is partly a small-area effect. The higher rural DC-fast density
+is *possibly* highway-corridor charging, but that is a **hypothesis** (no road
+data here), not a verified geographic finding.
+
+**Affordability (RQ1 supplement, ACS B25070).** The **median Colorado ZCTA has
+51% of renter households cost-burdened** (≥30% of income on rent; "not computed"
+excluded from the denominator); the **household-weighted statewide estimate is
+~53%**. The two describe a typical ZCTA vs a typical renter household — both
+reported. Higher median in urban-dominant (54%) than rural (45%) ZCTAs. ACS
+margins of error are proportionally large for small renter populations, so
+tiny-area shares are indicative only.
+
+**Vintages (documented).** Urban/rural = 2020 Census DHC; renter burden +
+households = 2020–2024 ACS 5-year; EV/stations = 2026 snapshots. Different years
+and methods — comparisons are descriptive. Figures: `14_urban_rural_ports.png`,
+`15_renter_cost_burden.png`. Data: `urban_rural_affordability.csv`,
+`…_report.json`.
+
 ## Interpretation, limitations, and what this does not prove
 
 - **Two objectives, kept separate.** *Primary (planning):* which communities may

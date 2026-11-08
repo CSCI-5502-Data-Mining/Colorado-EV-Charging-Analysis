@@ -1,7 +1,7 @@
 {
-  "generated_utc": "2026-11-08T04:01:57.712795+00:00",
+  "generated_utc": "2026-11-08T07:08:52.092825+00:00",
   "input": "data/processed/modeling_colorado.csv",
-  "git_commit": "147a410",
+  "git_commit": "4504f97",
   "n_cohort": 418,
   "top_n": 30,
   "base_weights": {

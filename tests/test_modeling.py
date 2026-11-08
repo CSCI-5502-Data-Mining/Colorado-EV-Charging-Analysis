@@ -357,5 +357,62 @@ class NeedRanking(unittest.TestCase):
         self.assertAlmostEqual(float(base_pct.iloc[0]), float(sub_pct.iloc[0]), delta=0.2)
 
 
+class UrbanRuralAffordability(unittest.TestCase):
+    """Supporting descriptive analysis: classification thresholds and the
+    B25070 cost-burden denominator rule (excluding 'not computed')."""
+
+    def test_urban_class_thresholds(self):
+        import urban_rural_affordability as ura
+        shares = pd.Series([0.95, 0.80, 0.50, 0.20, 0.05, np.nan])
+        cls = ura.classify(shares)
+        self.assertEqual(cls.iloc[0], 'urban_dominant')   # 0.95
+        self.assertEqual(cls.iloc[1], 'urban_dominant')   # 0.80 boundary inclusive
+        self.assertEqual(cls.iloc[2], 'mixed')            # 0.50
+        self.assertEqual(cls.iloc[3], 'rural_dominant')   # 0.20 boundary inclusive
+        self.assertEqual(cls.iloc[4], 'rural_dominant')   # 0.05
+        self.assertTrue(pd.isna(cls.iloc[5]))             # missing stays missing
+
+    def test_cost_burden_excludes_not_computed(self):
+        # B25070: denominator = total (001) minus 'not computed' (011); numerator
+        # = the four >=30% buckets (007-010). Verify the exclusion explicitly.
+        import tempfile
+        import urban_rural_affordability as ura
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / 'b25070.csv'
+            # 100 total renters, 20 not-computed -> denom 80; burdened = 10+10+5+15 = 40.
+            pd.DataFrame({
+                'B25070_001E': [100], 'B25070_007E': [10], 'B25070_008E': [10],
+                'B25070_009E': [5], 'B25070_010E': [15], 'B25070_011E': [20],
+                'zip code tabulation area': ['80301'],
+            }).to_csv(path, index=False)
+            orig = ura.ACS_B25070_CSV
+            ura.ACS_B25070_CSV = path
+            try:
+                out = ura.load_b25070()
+            finally:
+                ura.ACS_B25070_CSV = orig
+            # 40 / (100 - 20) = 0.5, NOT 40/100 = 0.4.
+            self.assertAlmostEqual(float(out['renter_cost_burden_share'].iloc[0]), 0.5, places=6)
+            self.assertEqual(int(out['renter_households_rent_computed'].iloc[0]), 80)
+
+    def test_urban_share_undefined_for_zero_population(self):
+        import tempfile
+        import urban_rural_affordability as ura
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / 'dhc.csv'
+            pd.DataFrame({
+                'P2_001N': [1000, 0], 'P2_002N': [800, 0], 'P2_003N': [200, 0],
+                'zip code tabulation area': ['80301', '80302'],
+            }).to_csv(path, index=False)
+            orig = ura.DHC_CSV
+            ura.DHC_CSV = path
+            try:
+                out = ura.load_dhc().set_index('zcta')
+            finally:
+                ura.DHC_CSV = orig
+            self.assertAlmostEqual(float(out.loc['80301', 'urban_share_2020']), 0.8, places=6)
+            self.assertTrue(pd.isna(out.loc['80302', 'urban_share_2020']))
+
+
 if __name__ == '__main__':
     unittest.main()
