@@ -195,22 +195,35 @@ Two predefined rankings over the 418 Colorado codes, percentile-normalized
 - **Approach 1 — access-only baseline:** rank by public-charging scarcity per
   household. Low supply alone does not prove high need.
 - **Approach 2 — demand + equity + access composite:** three separate
-  components. Demand is **observed** adoption (never the regression prediction),
-  access is charging scarcity, equity blends renter share and lower income.
-  Base weights demand 0.33 / access 0.34 / equity 0.33.
+  components. Demand is **observed** adoption, not the regression prediction
+  (this avoids compounding the model's income bias with its prediction error,
+  but observed adoption still correlates with income, r ≈ 0.72, so demand alone
+  would still favour wealthier areas — the separate **equity** component, not
+  the observed-vs-predicted choice, is what offsets that). Access is charging
+  scarcity; equity blends renter share and lower income. Base weights demand
+  0.33 / access 0.34 / equity 0.33.
 
-The rankings disagree (Spearman ρ = 0.56; 4 of top-30 shared), and the composite
-shifts toward the equity-intended communities:
+The rankings disagree (Spearman ρ = 0.56). Compared **tie-aware** by full
+priority group (not an arbitrary top-30, since 146 zero-supply codes tie):
 
-| Top-30 set | Share lower-income | Share renter-heavy | Mean income | Mean adoption |
+| Priority group (full) | n | Lower-income | Renter-heavy | Mean income |
 |---|---:|---:|---:|---:|
-| Cohort overall | 0.50 | 0.50 | $90k | 65 |
-| Access-only baseline | 0.27 | 0.10 | $108k | 67 |
-| Demand + equity + access | **0.70** | **0.77** | **$75k** | 68 |
+| Cohort overall | 418 | 0.50 | 0.50 | $90k |
+| Access-only tied zero-supply | 146 | 0.64 | 0.31 | $81k |
+| Composite top tier | 84 | 0.49 | 0.64 | $93k |
+
+The composite shift is specifically toward **renter-heavy** communities, a
+trade-off between equity definitions rather than a uniform improvement.
 
 **Weight sensitivity.** Demand-heavy weighting pushes the top set to mean income
 $134k (the failure mode of an adoption-only ranking); equity-heavy pushes it to
 97% lower-income / 100% renter-heavy ($58k); equal-thirds ≈ base (ρ = 0.999).
+
+**Priority areas (planning output).** The 84 tier-1 ZCTAs are the project's
+answer to "where to prioritize." Most have zero public ports paired with
+demonstrated demand and an equity signal; the mix ranges from demand-driven
+(e.g. 81430, 80220) to equity-driven (e.g. 80521, 80729). Full list and
+components in `need_ranking.csv`; the website shows the top 12 inline.
 
 **Pre-freeze checks (`need_ranking_report.json`):**
 

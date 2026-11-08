@@ -46,7 +46,7 @@
 <section class="hero">
 <div class="container hero-grid">
 <div>
-<p class="eyebrow">CSCI 5502 · Data Mining · Milestone 2</p>
+<p class="eyebrow">CSCI 5502 · Data Mining · Semester Project (Milestones 2 &amp; 3)</p>
 <h1>Colorado EV Charging Access &amp; Adoption</h1>
 <p class="hero-text">
 Investigating where Colorado’s public EV charging network aligns with current demand and where gaps may remain for lower-income, renter-heavy, and rural communities.
@@ -435,7 +435,7 @@ The one-time held-out test (4 whole ZIP3 groups, 89 codes, scored once) gives MA
 </p>
 <ul class="clean-list">
 <li>The held-out groups happen to be <strong>low-adoption, low-variance</strong> areas (test adoption median ≈ 30 vs. training ≈ 51). R² is a ratio to the variance present, so it looks poor wherever there is little variance to explain — even when predictions are good.</li>
-<li>Where it matters, the model <strong>clearly beats the mean baseline on every held-out group</strong>: test MAE 23.0 vs. the baseline's 41.6 (e.g. group 811, MAE 12.8 vs. 50.0). So the model generalizes; the low R² is a property of the test slice, not a failure of the model.</li>
+<li>Where it matters, the model <strong>beats the mean baseline on held-out MAE in every held-out group</strong>: test MAE 23.0 vs. the baseline's 41.6 (e.g. group 811, MAE 12.8 vs. 50.0). The low R² partly reflects the test slice's small variance, but with only ~17 Colorado ZIP3 groups and one held-out slice we treat <strong>geographic generalization as limited and unproven</strong> — the nested-CV mean remains the headline, and the test is a one-time confirmation that the model is better than predicting the average, not evidence that it generalizes everywhere.</li>
 </ul>
 <p class="note">
 This is why we report the nested outer-fold mean (26.8 MAE) as the headline and treat the single grouped test as a one-time confirmation — with only ~17 Colorado ZIP3 groups, one held-out slice is inherently high-variance.
@@ -503,7 +503,7 @@ The useful finding for the project: the model is roughly <strong>even across zer
 <div class="visual-title">9 · Feature importance</div>
 <img src="figures/09_feature_importance.png" alt="Horizontal bar chart of Random Forest feature importance with median household income dominating and renter share, households, and population much smaller." />
 <figcaption>
-<strong>Median household income dominates</strong> both the Ridge coefficients (largest standardized weight) and Random Forest importance (~0.81), confirmed by permutation importance on the test set. Renter share, population, and household count contribute little. This matches the exploratory finding that income is the main measurable correlate of adoption.
+<strong>Median household income dominates.</strong> This chart is the <em>four-feature</em> Random Forest candidate (income, renter share, population, households) — shown because feature importance is only meaningful when there are several features to compare; the finally <em>selected</em> model is the simpler two-feature forest (income + renter share), which the harness found statistically indistinguishable in accuracy. In the four-feature candidate, income carries ~0.81 of the Random Forest importance and the largest standardized Ridge coefficient (confirmed by permutation importance on the test set), while renter share, population, and household count contribute little. This matches the exploratory finding that income is the main measurable correlate of adoption, and it is <em>why</em> dropping population and households costs almost no accuracy.
 </figcaption>
 </figure>
 <p>
@@ -546,7 +546,7 @@ The clustering screen is binary; to prioritize, we built a transparent <strong>n
 </p>
 <ul class="clean-list">
 <li><strong>Approach 1 — access-only baseline:</strong> rank by public-charging scarcity per household. Simple, but <em>low supply alone does not prove high need</em> — a low-demand, well-off area can have little supply and little need.</li>
-<li><strong>Approach 2 — demand + equity + access composite:</strong> three <em>separate</em> components, each normalized then combined. Demand is <strong>observed</strong> adoption (never the regression prediction, so the ranking cannot be steered toward already-wealthy areas); access is charging scarcity; equity blends renter share and lower income.</li>
+<li><strong>Approach 2 — demand + equity + access composite:</strong> three <em>separate</em> components, each normalized then combined. Demand is <strong>observed</strong> adoption, not the regression prediction — this avoids compounding the model's income bias with its own prediction error, but observed adoption still correlates with income (r ≈ 0.72), so demand alone would still favour wealthier areas. That bias is offset by the separate <em>equity</em> component (renter share and lower income), not by the choice of observed vs. predicted; access is charging scarcity.</li>
 </ul>
 <p>
 The two rankings disagree substantially (Spearman ρ = 0.56). We compare them <strong>tie-aware</strong>, by each method's full priority group rather than an arbitrary top-30 (see the note on ties below), looking at the share that is lower-income or renter-heavy relative to cohort medians:
@@ -597,6 +597,35 @@ The two rankings disagree substantially (Spearman ρ = 0.56). We compare them <s
 <strong>Household coverage of identified priority areas.</strong> The highest-priority tier (84 codes) contains roughly <strong>546,000 households (~228,000 renter households)</strong>. This is the population <em>living in</em> the identified priority areas — it is <em>not</em> a count of households proven to gain charging access. Measuring actual access improvement needs a proposed station location and the households within a reasonable travel distance, which is the job of the later H3 analysis. The full ranking, both tier columns, stability, and all component values are in <code>data/processed/need_ranking.csv</code>; assumptions, weights, the coverage audit, the tie audit, and the tie-aware comparison are in <code>need_ranking_report.json</code>.
 </p>
 
+<h3>Priority areas — the project's planning output</h3>
+<p>
+This is the concrete answer to the project's central question. The 84 highest-priority (tier-1) ZCTAs are the areas where demand, limited access, and equity need most coincide. Below are the top 12 by composite score, with each of the three separate components (0–1, higher = more need) so the reasoning is visible; the complete tier-1 list and all 418 scored ZCTAs are in <code>data/processed/need_ranking.csv</code>. These are candidate priority areas for further investigation, not verified best sites.
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>ZCTA</th><th>EVs /1k hh</th><th>Ports /1k hh</th><th>Median income</th><th>Renter share</th><th>Demand</th><th>Access</th><th>Equity</th><th>Score</th></tr>
+</thead>
+<tbody>
+<tr><td>80840</td><td>72.2</td><td>0.0</td><td>$69k</td><td>1.00</td><td>0.67</td><td>0.83</td><td>0.85</td><td><strong>0.78</strong></td></tr>
+<tr><td>80835</td><td>47.3</td><td>0.0</td><td>$49k</td><td>0.38</td><td>0.52</td><td>0.83</td><td>0.86</td><td>0.73</td></tr>
+<tr><td>81430</td><td>128.9</td><td>0.0</td><td>$74k</td><td>0.16</td><td>0.87</td><td>0.83</td><td>0.45</td><td>0.72</td></tr>
+<tr><td>81019</td><td>45.2</td><td>0.0</td><td>$38k</td><td>0.28</td><td>0.50</td><td>0.83</td><td>0.79</td><td>0.71</td></tr>
+<tr><td>80432</td><td>97.3</td><td>0.0</td><td>$45k</td><td>0.00</td><td>0.78</td><td>0.83</td><td>0.49</td><td>0.70</td></tr>
+<tr><td>80820</td><td>69.9</td><td>0.0</td><td>$49k</td><td>0.16</td><td>0.66</td><td>0.83</td><td>0.59</td><td>0.69</td></tr>
+<tr><td>80236</td><td>58.0</td><td>0.0</td><td>$86k</td><td>0.40</td><td>0.58</td><td>0.83</td><td>0.66</td><td>0.69</td></tr>
+<tr><td>80729</td><td>34.9</td><td>0.0</td><td>$49k</td><td>0.32</td><td>0.41</td><td>0.83</td><td>0.80</td><td>0.68</td></tr>
+<tr><td>80521</td><td>72.0</td><td>1.6</td><td>$58k</td><td>0.63</td><td>0.66</td><td>0.46</td><td>0.90</td><td>0.68</td></tr>
+<tr><td>80220</td><td>132.5</td><td>0.6</td><td>$106k</td><td>0.43</td><td>0.88</td><td>0.56</td><td>0.57</td><td>0.67</td></tr>
+<tr><td>80231</td><td>56.4</td><td>0.2</td><td>$77k</td><td>0.60</td><td>0.58</td><td>0.64</td><td>0.79</td><td>0.67</td></tr>
+<tr><td>80235</td><td>55.5</td><td>0.2</td><td>$70k</td><td>0.47</td><td>0.57</td><td>0.64</td><td>0.79</td><td>0.67</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">
+Reading the table: most top-tier areas have <em>zero</em> public ports (access = 0.83, the shared zero-supply percentile) paired with demonstrated demand and an equity signal. The mix varies — 81430 and 80220 are demand-driven, while 80521 and 80729 are equity-driven — which is exactly the demand-vs-equity balance the composite is meant to surface. Tier is the defensible unit; the exact order within the top 12 is not meaningful to the decimal (see the stability note above).
+</p>
+
 <h3>Urban vs. rural charging, and renter affordability (supporting questions)</h3>
 <p>
 Two of the original supporting questions — urban-vs-rural charging density (RQ3) and housing <em>affordability</em> within RQ1 — are answered here as a <strong>separate descriptive analysis</strong> (<code>src/fetch_urban_affordability.py</code> → <code>src/urban_rural_affordability.py</code>). It leaves the frozen regression, clustering, and ranking untouched and adds two official Census tables, joined to the Colorado ZCTAs: the <strong>2020 Census DHC P2</strong> urban/rural population counts, and <strong>ACS 2024 B25070</strong> renter cost burden.
@@ -638,7 +667,7 @@ Each Colorado ZCTA is classified by its <strong>official Census-2020 urban popul
 <ul class="clean-list">
 <li><strong>Descriptive, not causal.</strong> Income predicts adoption well, but this is association from a ZIP↔ZCTA proxy join across mixed time periods — not evidence that raising income causes EV adoption.</li>
 <li><strong>Equity caveat, handled explicitly.</strong> A model of <em>current</em> ownership encodes existing income inequality — a demand-only ranking pushes the top set to a mean income of $134k (shown above). That is exactly why the need ranking uses observed demand as only one of three separate components, and why the equity-weighted ranking is reported alongside it.</li>
-<li><strong>Ranks are candidate flags, not verdicts.</strong> Individual ZCTA need ranks move substantially under resampling, and no observed station-outcome data exists, so no code can be called the objectively best site. The ranking narrows where to look next.</li>
+<li><strong>Tiers, not exact ranks, are the unit.</strong> Under resampling a ZCTA's priority moves only a little (median percentile movement 0.024, ~10 of 418 positions) and tier membership is stable (0.97 retention) — but we still report broad tiers rather than a precise 1–418 order, and no observed station-outcome data exists, so no code can be called the objectively best site. The ranking narrows where to look next.</li>
 <li><strong>Geography is a proxy.</strong> The 80/81 prefix and ZIP3 grouping approximate Colorado membership and spatial structure; ZCTA polygons or a ZIP-to-county crosswalk would be the accurate upgrade.</li>
 <li><strong>Urban/rural is ZCTA-level and uses mixed Census vintages.</strong> Classifying a whole ZCTA as urban- or rural-dominant hides within-ZCTA mixing (23 of 500 ZCTAs could not be classified at all and are reported separately). The sources also span different years: the urban/rural split is 2020 Census, households/income/renter burden are 2020–2024 ACS, and EV/station data are 2026 snapshots — so a ZCTA's urban share could have shifted since 2020. Comparisons are descriptive.</li>
 <li><strong>Next stage (future work, not Milestone 3 results).</strong> Site-level analysis — <strong>H3 resolution 10</strong> candidate cells, road accessibility, proximity to existing chargers, substation proximity, and land-use suitability — requires spatial data the repository does not yet hold. Regression, clustering, and the ZCTA need ranking are the <em>community-need</em> inputs to that layer; feasibility screening is a separate step before any construction claim.</li>
@@ -834,6 +863,8 @@ that apply to real-world problems. He is especially interested in applying data 
 <li>Lee, D.-Y., Wilson, A., McDermott, M. H., Sovacool, B. K., Kaufmann, R., Isaac, R., Cleveland, C., Smith, M., Brown, M., &amp; Ward, J. (2025). Does electric mobility display racial or income disparities? Quantifying inequality in the distribution of electric vehicle adoption and charging infrastructure in the United States. <em>Applied Energy, 378</em>(Part A), 124795. <a href="https://doi.org/10.1016/j.apenergy.2024.124795" target="_blank" rel="noopener">https://doi.org/10.1016/j.apenergy.2024.124795</a></li>
 <li>State of Colorado. (n.d.). <em>Map of alternative fuels and electric vehicle charging stations</em>. Colorado Information Marketplace. <a href="https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7" target="_blank" rel="noopener">https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7</a></li>
 <li>U.S. Census Bureau. (n.d.). <em>American Community Survey 5-year data</em>. <a href="https://www.census.gov/data/developers/data-sets/acs-5year.html" target="_blank" rel="noopener">https://www.census.gov/data/developers/data-sets/acs-5year.html</a></li>
+<li>U.S. Census Bureau. (2021). <em>2020 Census Demographic and Housing Characteristics File (DHC), Table P2: Urban and Rural</em> [ZCTA; API: 2020/dec/dhc]. <a href="https://api.census.gov/data/2020/dec/dhc.html" target="_blank" rel="noopener">https://api.census.gov/data/2020/dec/dhc.html</a></li>
+<li>U.S. Census Bureau. (2024). <em>American Community Survey 5-year estimates, Table B25070: Gross Rent as a Percentage of Household Income</em> [ZCTA; API: 2024/acs/acs5]. <a href="https://api.census.gov/data/2024/acs/acs5/groups/B25070.html" target="_blank" rel="noopener">https://api.census.gov/data/2024/acs/acs5/groups/B25070.html</a></li>
 <li>U.S. Department of Energy, Alternative Fuels Data Center. (2026, September 3). <em>Alternative fueling station counts by state</em>. <a href="https://afdc.energy.gov/stations/states" target="_blank" rel="noopener">https://afdc.energy.gov/stations/states</a></li>
 </ol>
 </div>
@@ -843,7 +874,7 @@ that apply to real-world problems. He is especially interested in applying data 
 
 <footer>
 <div class="container footer-inner">
-<span>CSCI 5502 · Semester Group Project · Milestone 2</span>
+<span>CSCI 5502 · Semester Group Project · Milestones 2 &amp; 3</span>
 <span>Eddie Strand · Snehal Bhatnagar · Abdullah Bharde</span>
 </div>
 </footer>
