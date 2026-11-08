@@ -240,12 +240,17 @@ def main():
         'definition': ('share of renter households paying >=30% of income on '
                        'gross rent (ACS B25070 buckets 007-010), excluding the '
                        '"not computed" category (011) from the denominator'),
+        'coverage': ('All statistics are computed ONLY over the Colorado ZCTAs '
+                     'with valid B25070 data (n_zctas below; 437 of 500); the 63 '
+                     'unmatched or zero-rent-computed ZCTAs are excluded. These '
+                     'are NOT all-Colorado figures.'),
         'statistic_labels': ('median_across_zctas = unweighted median of per-ZCTA '
-                             'shares (a typical ZCTA); household_weighted_estimate '
-                             '= sum(burdened renters)/sum(rent-computed renters) '
-                             '(a typical renter household statewide). The "51%" '
-                             'headline is the median_across_zctas; the '
-                             'household-weighted statewide estimate is ~53%.'),
+                             'shares (a typical covered ZCTA); '
+                             'household_weighted_estimate = sum(burdened renters)/'
+                             'sum(rent-computed renters) over the covered ZCTAs (a '
+                             'typical renter household in a covered ZCTA, ~53%, '
+                             'NOT a statewide all-renter rate). The "51%" headline '
+                             'is the median_across_zctas.'),
         'colorado_overall': burden_summary(merged),
         'by_urban_class': {cls: burden_summary(merged.loc[merged['urban_class'] == cls])
                            for cls in ['urban_dominant', 'mixed', 'rural_dominant']
@@ -279,9 +284,9 @@ def main():
               f"zero_supply={d['share_zero_supply']}")
     cb = report['renter_cost_burden']
     o = cb['colorado_overall']
-    print(f"Renter cost burden (>=30% income on rent): median across ZCTAs="
-          f"{o['median_across_zctas']}, household-weighted statewide="
-          f"{o['household_weighted_estimate']}")
+    print(f"Renter cost burden (>=30% income on rent), over {o['n_zctas']} ZCTAs with "
+          f"valid B25070 data: median across ZCTAs={o['median_across_zctas']}, "
+          f"household-weighted (covered ZCTAs)={o['household_weighted_estimate']}")
     for cls, d in cb['by_urban_class'].items():
         print(f"  {cls:15s} median_across_zctas={d['median_across_zctas']} (n={d['n_zctas']})")
     print(f"Wrote {repo_relative(args.out)} and {repo_relative(args.report)}.")

@@ -321,13 +321,15 @@ but the magnitude is partly a small-area effect. The higher rural DC-fast densit
 is *possibly* highway-corridor charging, but that is a **hypothesis** (no road
 data here), not a verified geographic finding.
 
-**Affordability (RQ1 supplement, ACS B25070).** The **median Colorado ZCTA has
-51% of renter households cost-burdened** (≥30% of income on rent; "not computed"
-excluded from the denominator); the **household-weighted statewide estimate is
-~53%**. The two describe a typical ZCTA vs a typical renter household — both
-reported. Higher median in urban-dominant (54%) than rural (45%) ZCTAs. ACS
-margins of error are proportionally large for small renter populations, so
-tiny-area shares are indicative only.
+**Affordability (RQ1 supplement, ACS B25070).** Across the **437 of 500 Colorado
+ZCTAs with valid B25070 data**, the **median ZCTA has 51% of renter households
+cost-burdened** (≥30% of income on rent; "not computed" excluded from the
+denominator); weighting by renter households (~763k rent-computed renters in
+those ZCTAs) gives **~53%**. These are NOT an all-Colorado figure — the 63
+unmatched/zero-renter ZCTAs are excluded — and describe a typical ZCTA vs a
+typical renter household in a covered ZCTA. Higher median in urban-dominant (54%)
+than rural (45%) ZCTAs. ACS margins of error are proportionally large for small
+renter populations, so tiny-area shares are indicative only.
 
 **Vintages (documented).** Urban/rural = 2020 Census DHC; renter burden +
 households = 2020–2024 ACS 5-year; EV/stations = 2026 snapshots. Different years
