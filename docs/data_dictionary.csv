@@ -22,3 +22,12 @@ acs_join,categorical,both/left_only/right_only,Merge indicator for the ACS join,
 matched_acs,boolean,True/False,Whether the code matched an ACS ZCTA record,derived join,unmatched codes preserved not dropped
 ev_data_present,boolean,True/False,Whether Atlas EV registrations exist for this code,derived join,absence is not a demonstrated zero
 afdc_data_present,boolean,True/False,Whether an AFDC public station exists for this code,derived join,absence is not a demonstrated zero
+pop2020_total,float,persons,Total 2020 Census population for the ZCTA,Census 2020 DHC P2 P2_001N,"supporting analysis only (urban_rural_affordability.csv), not in the frozen modeling table"
+urban_share_2020,float,ratio 0-1,Share of 2020 population classified urban (P2_002N / P2_001N),derived Census 2020 DHC P2,missing where total population is zero or ZCTA unmatched to DHC
+urban_class,categorical,urban_dominant/mixed/rural_dominant,ZCTA urban class by 2020 urban share (>=0.80 urban-dominant; <=0.20 rural-dominant; between = mixed),derived Census 2020 DHC P2,ZCTA-level not per-charger; missing for the 23 DHC-unmatched Colorado codes
+renter_cost_burden_share,float,ratio 0-1,Share of renter households paying >=30% of income on gross rent,derived ACS 2024 B25070,"numerator buckets 007E-010E; denominator 001E minus 011E (not computed); MOE larger for small renter populations"
+renter_households_rent_computed,float,occupied housing units,Renter households with rent-as-income-share computed (B25070_001E minus 011E),derived ACS 2024 B25070,denominator for renter_cost_burden_share; excludes the not-computed category
+special_use_flag,boolean,True/False,Flags institutional/group-quarters ZCTAs (renter_share==100% OR persons_per_household>5),derived need_ranking,"need_ranking.csv only; e.g. 80840 = USAF Academy; kept in ranking, read with caveat"
+persons_per_household,float,persons per household,Population divided by households (group-quarters indicator),derived Atlas/ACS,need_ranking.csv only; cohort 99th percentile ~3.4; high values indicate non-residential housing
+tier_composite,integer,1-5,Broad priority tier from the composite need score (1 = highest need),derived need_ranking,need_ranking.csv; reported instead of exact ranks because ranks are less stable than tiers
+tier_baseline,integer,1-5 (fewer if tied),Broad priority tier from the access-only score,derived need_ranking,need_ranking.csv; access ties collapse some tiers (zero-supply block shares one score)

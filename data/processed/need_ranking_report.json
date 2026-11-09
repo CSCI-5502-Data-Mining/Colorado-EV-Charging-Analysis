@@ -1,7 +1,7 @@
 {
-  "generated_utc": "2026-11-08T04:01:57.712795+00:00",
+  "generated_utc": "2026-11-08T21:21:38.166346+00:00",
   "input": "data/processed/modeling_colorado.csv",
-  "git_commit": "147a410",
+  "git_commit": "b3985d7",
   "n_cohort": 418,
   "top_n": 30,
   "base_weights": {
@@ -129,6 +129,38 @@
       "81655"
     ],
     "interpretation": "The un-rankable codes are mostly very small/rural (low median households) and a HIGHER share have no public station than the rankable cohort, so they may be MORE under-served, not less. They are excluded only for missing socioeconomic fields or an unstable tiny household denominator, and are reported here rather than silently dropped. Enumerating every true Colorado Census ZCTA needs a ZIP-to-ZCTA crosswalk (future work); the 500 here are the codes the pipeline matched."
+  },
+  "special_use_audit": {
+    "rule": "renter_share == 100% OR persons_per_household > 5 (cohort 99th pct ~3.4). Flags group-quarters / institutional ZCTAs whose renter share and per-household rates do not describe an ordinary residential community. Flag does NOT change scores.",
+    "n_flagged": 3,
+    "n_flagged_in_tier1": 2,
+    "flagged": [
+      {
+        "zcta": "80840",
+        "tier": 1,
+        "score": 0.783,
+        "renter_share": 1.0,
+        "persons_per_household": 9.53,
+        "households": 706
+      },
+      {
+        "zcta": "81062",
+        "tier": 1,
+        "score": 0.593,
+        "renter_share": 0.273,
+        "persons_per_household": 6.06,
+        "households": 330
+      },
+      {
+        "zcta": "80902",
+        "tier": 2,
+        "score": 0.567,
+        "renter_share": 1.0,
+        "persons_per_household": 3.42,
+        "households": 3494
+      }
+    ],
+    "interpretation": "Flagged areas are kept in the ranking but should be read as special cases: e.g. 80840 is the U.S. Air Force Academy ZCTA (100% renter, ~9.5 persons/household), so \"100% renter, zero public ports\" reflects institutional housing, not an ordinary underserved community. Verify access and whether new public charging would serve the general public before treating such a ZCTA as a top candidate."
   },
   "access_tie_audit": {
     "n_zero_supply_codes": 146,

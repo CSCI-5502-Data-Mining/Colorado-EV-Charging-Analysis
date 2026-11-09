@@ -195,22 +195,44 @@ Two predefined rankings over the 418 Colorado codes, percentile-normalized
 - **Approach 1 — access-only baseline:** rank by public-charging scarcity per
   household. Low supply alone does not prove high need.
 - **Approach 2 — demand + equity + access composite:** three separate
-  components. Demand is **observed** adoption (never the regression prediction),
-  access is charging scarcity, equity blends renter share and lower income.
-  Base weights demand 0.33 / access 0.34 / equity 0.33.
+  components. Demand is **observed** adoption, not the regression prediction
+  (this avoids compounding the model's income bias with its prediction error,
+  but observed adoption still correlates with income, r ≈ 0.72, so demand alone
+  would still favour wealthier areas — the separate **equity** component, not
+  the observed-vs-predicted choice, is what offsets that). Access is charging
+  scarcity; equity blends renter share and lower income. Base weights demand
+  0.33 / access 0.34 / equity 0.33.
 
-The rankings disagree (Spearman ρ = 0.56; 4 of top-30 shared), and the composite
-shifts toward the equity-intended communities:
+The rankings disagree (Spearman ρ = 0.56). Compared **tie-aware** by full
+priority group (not an arbitrary top-30, since 146 zero-supply codes tie):
 
-| Top-30 set | Share lower-income | Share renter-heavy | Mean income | Mean adoption |
+| Priority group (full) | n | Lower-income | Renter-heavy | Mean income |
 |---|---:|---:|---:|---:|
-| Cohort overall | 0.50 | 0.50 | $90k | 65 |
-| Access-only baseline | 0.27 | 0.10 | $108k | 67 |
-| Demand + equity + access | **0.70** | **0.77** | **$75k** | 68 |
+| Cohort overall | 418 | 0.50 | 0.50 | $90k |
+| Access-only tied zero-supply | 146 | 0.64 | 0.31 | $81k |
+| Composite top tier | 84 | 0.49 | 0.64 | $93k |
+
+The composite shift is specifically toward **renter-heavy** communities, a
+trade-off between equity definitions rather than a uniform improvement.
 
 **Weight sensitivity.** Demand-heavy weighting pushes the top set to mean income
 $134k (the failure mode of an adoption-only ranking); equity-heavy pushes it to
 97% lower-income / 100% renter-heavy ($58k); equal-thirds ≈ base (ρ = 0.999).
+
+**Priority areas (planning output).** The 84 tier-1 ZCTAs are the project's
+answer to "where to prioritize." Most have zero public ports paired with
+demonstrated demand and an equity signal; the mix ranges from demand-driven
+(e.g. 81430, 80220) to equity-driven (e.g. 80521, 80729). Full list and
+components in `need_ranking.csv`; the website shows the top 12 inline.
+
+**Special-use flag.** A documented rule (renter share = 100% OR
+persons-per-household > 5; cohort 99th pct ~3.4) flags 3 institutional/
+group-quarters ZCTAs — **80840 (U.S. Air Force Academy)**, 81062, 80902 — two of
+them tier-1. They are kept in the ranking with a `special_use_flag` column, not
+dropped. 80840's "100% renter, zero public ports, ~9.5 persons/household"
+profile is institutional housing, so its #1 rank should not be read as an
+ordinary underserved community; access restrictions and whether sited chargers
+would serve the public need verifying. See `special_use_audit` in the report.
 
 **Pre-freeze checks (`need_ranking_report.json`):**
 
@@ -266,6 +288,54 @@ $134k (the failure mode of an adoption-only ranking); equity-heavy pushes it to
 Figures: `12_need_ranking_shift.png`, `13_need_ranking_equity.png`. Data:
 `need_ranking.csv` (incl. `tier_composite`, `tier_baseline`, stability columns),
 `need_ranking_report.json`.
+
+## Urban vs. rural charging and renter affordability (supporting questions)
+
+Separate descriptive analysis (`src/fetch_urban_affordability.py` →
+`src/urban_rural_affordability.py`), frozen models untouched. Two official
+Census tables joined to the Colorado ZCTAs: 2020 DHC P2 (urban/rural population)
+and ACS 2024 B25070 (renter cost burden).
+
+Each ZCTA is classified by its Census-2020 **urban population share**:
+urban-dominant (≥80%), rural-dominant (≤20%), or mixed. This is a ZCTA-level
+comparison, **not** point-in-polygon classification of each charger — a ZCTA can
+straddle the urban boundary, so "mixed" is its own class. Full geospatial
+classification is the later H3 stage.
+
+| ZCTA urban class | n | All ports /1k | L2 /1k | DC fast /1k | Share zero supply |
+|---|---:|---:|---:|---:|---:|
+| Urban-dominant | 165 | 3.36 | 2.68 | 0.65 | **0.10** |
+| Mixed | 54 | 3.25 | 2.35 | 0.91 | 0.20 |
+| Rural-dominant | 258 | 3.15 | 1.96 | 1.20 | **0.64** |
+
+Classification reconciles: 165 urban-dominant + 54 mixed + 258 rural-dominant +
+23 unclassified (DHC-unmatched) = 500. Density is **household-weighted**
+(sum ports / sum households, not an average of per-ZCTA ratios).
+
+**RQ3 answer.** Total density is similar across classes, but Level 2 falls and
+DC fast rises toward rural, and the sharp contrast is coverage: **10% of
+urban-dominant ZCTAs have no public charging vs 64% of rural-dominant**.
+*Sensitivity:* the 64% softens to ~60% (≥100 households) and ~42% (≥500) because
+many rural ZCTAs are very small (median ~442 households); the direction is robust
+but the magnitude is partly a small-area effect. The higher rural DC-fast density
+is *possibly* highway-corridor charging, but that is a **hypothesis** (no road
+data here), not a verified geographic finding.
+
+**Affordability (RQ1 supplement, ACS B25070).** Across the **437 of 500 Colorado
+ZCTAs with valid B25070 data**, the **median ZCTA has 51% of renter households
+cost-burdened** (≥30% of income on rent; "not computed" excluded from the
+denominator); weighting by renter households (~763k rent-computed renters in
+those ZCTAs) gives **~53%**. These are NOT an all-Colorado figure — the 63
+unmatched/zero-renter ZCTAs are excluded — and describe a typical ZCTA vs a
+typical renter household in a covered ZCTA. Higher median in urban-dominant (54%)
+than rural (45%) ZCTAs. ACS margins of error are proportionally large for small
+renter populations, so tiny-area shares are indicative only.
+
+**Vintages (documented).** Urban/rural = 2020 Census DHC; renter burden +
+households = 2020–2024 ACS 5-year; EV/stations = 2026 snapshots. Different years
+and methods — comparisons are descriptive. Figures: `14_urban_rural_ports.png`,
+`15_renter_cost_burden.png`. Data: `urban_rural_affordability.csv`,
+`…_report.json`.
 
 ## Interpretation, limitations, and what this does not prove
 

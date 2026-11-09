@@ -46,7 +46,7 @@
 <section class="hero">
 <div class="container hero-grid">
 <div>
-<p class="eyebrow">CSCI 5502 · Data Mining · Milestone 2</p>
+<p class="eyebrow">CSCI 5502 · Data Mining · Semester Project (Milestones 2 &amp; 3)</p>
 <h1>Colorado EV Charging Access &amp; Adoption</h1>
 <p class="hero-text">
 Investigating where Colorado’s public EV charging network aligns with current demand and where gaps may remain for lower-income, renter-heavy, and rural communities.
@@ -255,7 +255,17 @@ We assembled a reproducible dataset from three public sources and explored it be
 
 <h3>Data sources and provenance</h3>
 <p>
-Colorado EV registrations come from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level). A full provenance table source, URL, license, geography, time coverage, raw size, and unit of observation is in <code>docs/provenance.csv</code>, and every analysis column is defined in <code>docs/data_dictionary.csv</code>.
+The <strong>original Milestone 2 sources</strong> were: Colorado EV registrations from Atlas EV Hub / Colorado Energy Office (latest DMV snapshot <strong>2026-07-07</strong>, accessed 2026-10-15); public charging stations from the U.S. DOE Alternative Fuels Data Center (download accessed 2026-10-15); and community demographics from the U.S. Census Bureau 2024 ACS 5-year release (ZCTA level, tables B01003/B19013/B25003).
+</p>
+<p>
+<strong>Added for the Milestone 3 supporting analysis</strong> (urban/rural and affordability), both pulled from the official Census APIs on <strong>2026-11-08</strong> at national ZCTA geography and filtered to Colorado:
+</p>
+<ul class="clean-list">
+<li><strong>Census 2020 DHC, Table P2 (urban/rural population)</strong> — endpoint <code>https://api.census.gov/data/2020/dec/dhc</code>, variables P2_001N/P2_002N/P2_003N, 33,774 national ZCTA rows; 477 of 500 Colorado codes matched (23 unmatched, mostly small/rural).</li>
+<li><strong>ACS 2024 5-year, Table B25070 (renter cost burden)</strong> — endpoint <code>https://api.census.gov/data/2024/acs/acs5</code>, variables B25070_001E and 007E–010E (with 011E "not computed" excluded from the denominator), 33,772 national ZCTA rows; 437 of 500 Colorado codes matched.</li>
+</ul>
+<p>
+<strong>Join limitation:</strong> both are matched on the 5-digit ZCTA code, so the ZIP↔ZCTA caveat and the different data vintages (2020 Census vs 2020–2024 ACS vs 2026 EV/station snapshots) apply; comparisons are descriptive. A full provenance table — source, URL, license, geography, time coverage, raw size, and unit of observation — is in <code>docs/provenance.csv</code>, every analysis column is defined in <code>docs/data_dictionary.csv</code>, and the raw-fetch record is in <code>data/raw/urban_affordability_provenance.json</code>.
 </p>
 
 <h3>Dataset and cleaning decisions</h3>
@@ -340,7 +350,7 @@ EDA confirms RQ1 is answerable now (income and renter-share relationships are me
 </p>
 <ul class="clean-list">
 <li><strong>RQ2 (adoption vs supply):</strong> the ~75% station-coverage gap means an "underserved" comparison must distinguish genuinely zero supply from unmatched/absent data.</li>
-<li><strong>RQ3 (urban vs rural):</strong> left open a defensible answer needs a formal Census urban-area classification, not ZIP prefixes, so we do not answer it from this proxy join.</li>
+<li><strong>RQ3 (urban vs rural):</strong> left open at Milestone 2 pending a formal classification (ZIP prefixes are not defensible). <em>Now answered</em> in the Models &amp; Evaluation section using official Census 2020 urban-area data at ZCTA level.</li>
 <li><strong>RQ4 (priority areas):</strong> still the intended final output; the per-household demand and supply rates are the inputs it will combine.</li>
 </ul>
 
@@ -435,7 +445,7 @@ The one-time held-out test (4 whole ZIP3 groups, 89 codes, scored once) gives MA
 </p>
 <ul class="clean-list">
 <li>The held-out groups happen to be <strong>low-adoption, low-variance</strong> areas (test adoption median ≈ 30 vs. training ≈ 51). R² is a ratio to the variance present, so it looks poor wherever there is little variance to explain — even when predictions are good.</li>
-<li>Where it matters, the model <strong>clearly beats the mean baseline on every held-out group</strong>: test MAE 23.0 vs. the baseline's 41.6 (e.g. group 811, MAE 12.8 vs. 50.0). So the model generalizes; the low R² is a property of the test slice, not a failure of the model.</li>
+<li>Where it matters, the model <strong>beats the mean baseline on held-out MAE in every held-out group</strong>: test MAE 23.0 vs. the baseline's 41.6 (e.g. group 811, MAE 12.8 vs. 50.0). The low R² partly reflects the test slice's small variance, but with only ~17 Colorado ZIP3 groups and one held-out slice we treat <strong>geographic generalization as limited and unproven</strong> — the nested-CV mean remains the headline, and the test is a one-time confirmation that the model is better than predicting the average, not evidence that it generalizes everywhere.</li>
 </ul>
 <p class="note">
 This is why we report the nested outer-fold mean (26.8 MAE) as the headline and treat the single grouped test as a one-time confirmation — with only ~17 Colorado ZIP3 groups, one held-out slice is inherently high-variance.
@@ -503,7 +513,7 @@ The useful finding for the project: the model is roughly <strong>even across zer
 <div class="visual-title">9 · Feature importance</div>
 <img src="figures/09_feature_importance.png" alt="Horizontal bar chart of Random Forest feature importance with median household income dominating and renter share, households, and population much smaller." />
 <figcaption>
-<strong>Median household income dominates</strong> both the Ridge coefficients (largest standardized weight) and Random Forest importance (~0.81), confirmed by permutation importance on the test set. Renter share, population, and household count contribute little. This matches the exploratory finding that income is the main measurable correlate of adoption.
+<strong>Median household income dominates.</strong> This chart is the <em>four-feature</em> Random Forest candidate (income, renter share, population, households) — shown because feature importance is only meaningful when there are several features to compare; the finally <em>selected</em> model is the simpler two-feature forest (income + renter share), which the harness found statistically indistinguishable in accuracy. In the four-feature candidate, income carries ~0.81 of the Random Forest importance and the largest standardized Ridge coefficient (confirmed by permutation importance on the test set), while renter share, population, and household count contribute little. This matches the exploratory finding that income is the main measurable correlate of adoption, and it is <em>why</em> dropping population and households costs almost no accuracy.
 </figcaption>
 </figure>
 <p>
@@ -546,7 +556,7 @@ The clustering screen is binary; to prioritize, we built a transparent <strong>n
 </p>
 <ul class="clean-list">
 <li><strong>Approach 1 — access-only baseline:</strong> rank by public-charging scarcity per household. Simple, but <em>low supply alone does not prove high need</em> — a low-demand, well-off area can have little supply and little need.</li>
-<li><strong>Approach 2 — demand + equity + access composite:</strong> three <em>separate</em> components, each normalized then combined. Demand is <strong>observed</strong> adoption (never the regression prediction, so the ranking cannot be steered toward already-wealthy areas); access is charging scarcity; equity blends renter share and lower income.</li>
+<li><strong>Approach 2 — demand + equity + access composite:</strong> three <em>separate</em> components, each normalized then combined. Demand is <strong>observed</strong> adoption, not the regression prediction — this avoids compounding the model's income bias with its own prediction error, but observed adoption still correlates with income (r ≈ 0.72), so demand alone would still favour wealthier areas. That bias is offset by the separate <em>equity</em> component (renter share and lower income), not by the choice of observed vs. predicted; access is charging scarcity.</li>
 </ul>
 <p>
 The two rankings disagree substantially (Spearman ρ = 0.56). We compare them <strong>tie-aware</strong>, by each method's full priority group rather than an arbitrary top-30 (see the note on ties below), looking at the share that is lower-income or renter-heavy relative to cohort medians:
@@ -597,16 +607,93 @@ The two rankings disagree substantially (Spearman ρ = 0.56). We compare them <s
 <strong>Household coverage of identified priority areas.</strong> The highest-priority tier (84 codes) contains roughly <strong>546,000 households (~228,000 renter households)</strong>. This is the population <em>living in</em> the identified priority areas — it is <em>not</em> a count of households proven to gain charging access. Measuring actual access improvement needs a proposed station location and the households within a reasonable travel distance, which is the job of the later H3 analysis. The full ranking, both tier columns, stability, and all component values are in <code>data/processed/need_ranking.csv</code>; assumptions, weights, the coverage audit, the tie audit, and the tie-aware comparison are in <code>need_ranking_report.json</code>.
 </p>
 
+<h3>Priority areas — the project's planning output</h3>
+<p>
+This is the concrete answer to the project's central question. The 84 highest-priority (tier-1) ZCTAs are the areas where demand, limited access, and equity need most coincide. Below are the top 12 by composite score, with each of the three separate components (0–1, higher = more need) so the reasoning is visible; the complete tier-1 list and all 418 scored ZCTAs are in <code>data/processed/need_ranking.csv</code>. These are candidate priority areas for further investigation, not verified best sites.
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>ZCTA</th><th>EVs /1k hh</th><th>Ports /1k hh</th><th>Median income</th><th>Renter share</th><th>Demand</th><th>Access</th><th>Equity</th><th>Score</th></tr>
+</thead>
+<tbody>
+<tr><td>80840 <span title="special-use / institutional ZCTA">⚠</span></td><td>72.2</td><td>0.0</td><td>$69k</td><td>1.00</td><td>0.67</td><td>0.83</td><td>0.85</td><td><strong>0.78</strong></td></tr>
+<tr><td>80835</td><td>47.3</td><td>0.0</td><td>$49k</td><td>0.38</td><td>0.52</td><td>0.83</td><td>0.86</td><td>0.73</td></tr>
+<tr><td>81430</td><td>128.9</td><td>0.0</td><td>$74k</td><td>0.16</td><td>0.87</td><td>0.83</td><td>0.45</td><td>0.72</td></tr>
+<tr><td>81019</td><td>45.2</td><td>0.0</td><td>$38k</td><td>0.28</td><td>0.50</td><td>0.83</td><td>0.79</td><td>0.71</td></tr>
+<tr><td>80432</td><td>97.3</td><td>0.0</td><td>$45k</td><td>0.00</td><td>0.78</td><td>0.83</td><td>0.49</td><td>0.70</td></tr>
+<tr><td>80820</td><td>69.9</td><td>0.0</td><td>$49k</td><td>0.16</td><td>0.66</td><td>0.83</td><td>0.59</td><td>0.69</td></tr>
+<tr><td>80236</td><td>58.0</td><td>0.0</td><td>$86k</td><td>0.40</td><td>0.58</td><td>0.83</td><td>0.66</td><td>0.69</td></tr>
+<tr><td>80729</td><td>34.9</td><td>0.0</td><td>$49k</td><td>0.32</td><td>0.41</td><td>0.83</td><td>0.80</td><td>0.68</td></tr>
+<tr><td>80521</td><td>72.0</td><td>1.6</td><td>$58k</td><td>0.63</td><td>0.66</td><td>0.46</td><td>0.90</td><td>0.68</td></tr>
+<tr><td>80220</td><td>132.5</td><td>0.6</td><td>$106k</td><td>0.43</td><td>0.88</td><td>0.56</td><td>0.57</td><td>0.67</td></tr>
+<tr><td>80231</td><td>56.4</td><td>0.2</td><td>$77k</td><td>0.60</td><td>0.58</td><td>0.64</td><td>0.79</td><td>0.67</td></tr>
+<tr><td>80235</td><td>55.5</td><td>0.2</td><td>$70k</td><td>0.47</td><td>0.57</td><td>0.64</td><td>0.79</td><td>0.67</td></tr>
+</tbody>
+</table>
+</div>
+<p class="note">
+Reading the table: most top-tier areas have <em>zero</em> public ports (access = 0.83, the shared zero-supply percentile) paired with demonstrated demand and an equity signal. The mix varies — 81430 and 80220 are demand-driven, while 80521 and 80729 are equity-driven — which is exactly the demand-vs-equity balance the composite is meant to surface. Tier is the defensible unit; the exact order within the top 12 is not meaningful to the decimal (see the stability note above).
+</p>
+<p>
+<strong>⚠ Special-use areas flagged.</strong> The top-ranked ZCTA, <strong>80840, is the U.S. Air Force Academy</strong> — an institutional area, not an ordinary residential community. Its inputs are distorted accordingly: 100% renter-occupied housing and about 9.5 persons per household (vs. a cohort norm near 2.4), reflecting group quarters / military housing. So its "100% renter, zero public ports" profile drives a high equity + access score for reasons that do not mean the general public would be served by a new public charger there. A documented, reproducible rule (renter share = 100% <em>or</em> persons-per-household &gt; 5) flags <strong>three such ZCTAs</strong> (80840, 81062, 80902); they are <em>kept</em> in the ranking with a <code>special_use_flag</code> column rather than deleted, so the result is transparent. Before treating any flagged area as a top candidate, verify access restrictions, the renter-share denominator, and whether sited chargers would serve the public. The 81 non-flagged tier-1 ZCTAs are unaffected.
+</p>
+
+<h3>Urban vs. rural charging, and renter affordability (supporting questions)</h3>
+<p>
+Two of the original supporting questions — urban-vs-rural charging density (RQ3) and housing <em>affordability</em> within RQ1 — are answered here as a <strong>separate descriptive analysis</strong> (<code>src/fetch_urban_affordability.py</code> → <code>src/urban_rural_affordability.py</code>). It leaves the frozen regression, clustering, and ranking untouched and adds two official Census tables, joined to the Colorado ZCTAs: the <strong>2020 Census DHC P2</strong> urban/rural population counts, and <strong>ACS 2024 B25070</strong> renter cost burden.
+</p>
+<p>
+Each Colorado ZCTA is classified by its <strong>official Census-2020 urban population share</strong>: urban-dominant (≥80% urban), rural-dominant (≤20%), or mixed. This is a ZCTA-level comparison, <em>not</em> a point-in-polygon classification of each charger's own location — a ZCTA can straddle the urban boundary, which is why mixed areas are kept as their own class. Full geospatial classification (station coordinates in Census urban polygons, block-level denominators) is reserved for the later H3 stage.
+</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>ZCTA urban class</th><th>n</th><th>All ports /1k hh</th><th>Level 2 /1k</th><th>DC fast /1k</th><th>Share with zero public supply</th></tr>
+</thead>
+<tbody>
+<tr><td>Urban-dominant</td><td>165</td><td>3.36</td><td>2.68</td><td>0.65</td><td><strong>0.10</strong></td></tr>
+<tr><td>Mixed</td><td>54</td><td>3.25</td><td>2.35</td><td>0.91</td><td>0.20</td></tr>
+<tr><td>Rural-dominant</td><td>258</td><td>3.15</td><td>1.96</td><td>1.20</td><td><strong>0.64</strong></td></tr>
+</tbody>
+</table>
+</div>
+<figure class="context-figure">
+<div class="visual-title">14 · Charging-port density by urban class</div>
+<img src="figures/14_urban_rural_ports.png" alt="Grouped bars of all public ports, Level 2, and DC fast ports per 1,000 households for urban-dominant, mixed, and rural-dominant ZCTA classes; total density is similar but Level 2 falls and DC fast rises toward rural." />
+<figcaption>
+<strong>RQ3 answer.</strong> Density is computed per class as total ports ÷ total households (household-weighted, not an average of per-ZCTA ratios). Total port density is similar across classes, but the mix and coverage differ: <strong>Level 2</strong> density falls from urban to rural while <strong>DC fast</strong> rises. The sharpest contrast is coverage — only <strong>10% of urban-dominant ZCTAs have no public charging, versus 64% of rural-dominant ones</strong>. <em>Sensitivity:</em> that 64% softens to ~60% (≥100 households) and ~42% (≥500) because many rural ZCTAs are very small (median ~442 households), while the urban figure stays ~10% at every floor — so the <em>direction</em> is robust but the headline magnitude is partly a small-area effect. One <em>possible</em> explanation for the higher rural DC-fast density is reliance on highway-corridor fast charging rather than neighborhood Level 2, but this analysis does not locate chargers relative to roads, so that remains a hypothesis to test in the H3 stage, not a verified finding.
+</figcaption>
+</figure>
+<figure class="context-figure">
+<div class="visual-title">15 · Renter housing-cost burden by urban class</div>
+<img src="figures/15_renter_cost_burden.png" alt="Box plots of the share of renter households paying at least 30 percent of income on rent, by urban class; urban-dominant areas have a higher median than rural-dominant areas." />
+<figcaption>
+<strong>Affordability (RQ1 supplement).</strong> From ACS B25070, across the <strong>437 of 500 Colorado ZCTAs with valid B25070 data</strong>, the <strong>median ZCTA has 51% of renter households cost-burdened</strong> (≥30% of income on gross rent, excluding the "not computed" category); weighting by renter households (~763,000 rent-computed renter households in those ZCTAs) gives ~53%. These are <em>not</em> an all-Colorado figure — the 63 unmatched or zero-renter ZCTAs are excluded — and they answer different questions: a typical <em>ZCTA</em> vs a typical <em>renter household in a covered ZCTA</em>. The median-across-ZCTAs is higher in urban-dominant areas (54%) than rural (45%), so renter affordability pressure concentrates in the same urban areas that already have more Level 2 supply. This is descriptive context, not a model input; ACS margins of error are proportionally large for small renter populations, so per-ZCTA shares for tiny areas are indicative only.
+</figcaption>
+</figure>
+<p>
+<strong>How this answers the questions.</strong> Together these refine the equity picture: rural Colorado is not short on <em>total</em> ports so much as on <em>coverage</em> (most rural ZCTAs have none), while urban renters face the highest cost burden despite denser Level 2 — two different kinds of charging need the priority ranking and the future H3 work should both weigh. Outputs: <code>data/processed/urban_rural_affordability.csv</code> and <code>…_report.json</code> (classification thresholds, join statistics, and the MOE note).
+</p>
+
 <h3>Interpretation, limitations, and what this does not prove</h3>
 <ul class="clean-list">
 <li><strong>Descriptive, not causal.</strong> Income predicts adoption well, but this is association from a ZIP↔ZCTA proxy join across mixed time periods — not evidence that raising income causes EV adoption.</li>
 <li><strong>Equity caveat, handled explicitly.</strong> A model of <em>current</em> ownership encodes existing income inequality — a demand-only ranking pushes the top set to a mean income of $134k (shown above). That is exactly why the need ranking uses observed demand as only one of three separate components, and why the equity-weighted ranking is reported alongside it.</li>
-<li><strong>Ranks are candidate flags, not verdicts.</strong> Individual ZCTA need ranks move substantially under resampling, and no observed station-outcome data exists, so no code can be called the objectively best site. The ranking narrows where to look next.</li>
+<li><strong>Tiers, not exact ranks, are the unit.</strong> Under resampling a ZCTA's priority moves only a little (median percentile movement 0.024, ~10 of 418 positions) and tier membership is stable (0.97 retention) — but we still report broad tiers rather than a precise 1–418 order, and no observed station-outcome data exists, so no code can be called the objectively best site. The ranking narrows where to look next.</li>
 <li><strong>Geography is a proxy.</strong> The 80/81 prefix and ZIP3 grouping approximate Colorado membership and spatial structure; ZCTA polygons or a ZIP-to-county crosswalk would be the accurate upgrade.</li>
+<li><strong>Urban/rural is ZCTA-level and uses mixed Census vintages.</strong> Classifying a whole ZCTA as urban- or rural-dominant hides within-ZCTA mixing (23 of 500 ZCTAs could not be classified at all and are reported separately). The sources also span different years: the urban/rural split is 2020 Census, households/income/renter burden are 2020–2024 ACS, and EV/station data are 2026 snapshots — so a ZCTA's urban share could have shifted since 2020. Comparisons are descriptive.</li>
 <li><strong>Next stage (future work, not Milestone 3 results).</strong> Site-level analysis — <strong>H3 resolution 10</strong> candidate cells, road accessibility, proximity to existing chargers, substation proximity, and land-use suitability — requires spatial data the repository does not yet hold. Regression, clustering, and the ZCTA need ranking are the <em>community-need</em> inputs to that layer; feasibility screening is a separate step before any construction claim.</li>
 </ul>
+<h3>Conclusion</h3>
+<p>
+Our analysis identifies Colorado communities that may need additional public EV charging infrastructure by comparing EV adoption, existing charging availability, income, and housing characteristics. The priority scores highlight areas where charging demand and equity needs may not be fully supported by the current network, and these findings can help guide future charging-infrastructure planning.
+</p>
+<p>
+To be clear about what is and is not established: we have <strong>answered</strong> the factors question (income is the dominant measurable correlate of adoption; renter share and supply add little predictive power), the adoption-vs-supply and urban-vs-rural comparisons (rural areas lack <em>coverage</em> more than total ports; urban renters face the highest cost burden), and the underserved-identification question (a transparent, equity-aware ZCTA priority ranking reported as broad tiers). What we <strong>do not</strong> claim: that these are the objectively best places to build, that installing a charger would raise adoption, or that the regression generalizes beyond the ~17 Colorado ZIP3 groups it was validated on. The urban/rural result is a ZCTA-level comparison, not a per-charger geospatial classification. Establishing which specific sites would deliver the most benefit is the goal of the future H3 resolution-10 analysis, which adds finer population, road-access, existing-coverage, and electrical-feasibility data.
+</p>
 <p class="note">
-Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/prepare_modeling.py</code> → <code>python src/train_regression.py</code> → <code>python src/cluster_communities.py</code> regenerate every metric and figure (06–11). Offline checks: <code>python -m unittest discover -s tests</code>. See the repository <code>README.md</code>.
+Reproducible path: <code>pip install -r requirements.txt</code>, then <code>python src/prepare_modeling.py</code> → <code>python src/train_regression.py</code> → <code>python src/cluster_communities.py</code> → <code>python src/rank_need.py</code> regenerate the modeling metrics and figures (06–13). The supporting analysis adds <code>python src/fetch_urban_affordability.py</code> (live Census fetch; needs a free API key) → <code>python src/urban_rural_affordability.py</code> (figures 14–15). Offline checks: <code>python -m unittest discover -s tests</code>. See the repository <code>README.md</code>.
 </p>
 </div>
 </section>
@@ -650,6 +737,7 @@ Colorado’s 2022 NEVI Plan (CDOT, with Colorado Energy Office partnership descr
 <div class="container">
 <p class="section-kicker">D. Proposal Overview</p>
 <h2>Approved idea, data, and constraints</h2>
+<p class="note"><em>This section records the original Milestone 0–1 proposal — the problem, goal, planned data, and constraints anticipated up front. Items it describes as pending (exact ACS tables, the ZIP/ZCTA join, snapshot dates) have since been decided and carried out; see the Data &amp; Exploration and Models &amp; Evaluation sections for what was actually done.</em></p>
 <div class="proposal-grid">
 <div>
 <h3>Problem</h3>
@@ -665,7 +753,7 @@ Colorado’s 2022 NEVI Plan (CDOT, with Colorado Energy Office partnership descr
 </p>
 <h3>Change after Milestone 0</h3>
 <p>
-The core problem, goal, and charging/EV sources are unchanged. We added <strong>U.S. Census ACS community estimates</strong> to the planned stack because the approved questions require income and housing context, which were not in the Milestone 0 data table. Exact ACS tables, years, and the ZIP/ZCTA join still need to be specified in a later milestone. Research questions were restated more tightly (four questions instead of one umbrella question plus two bullets) so each can be mapped to evidence.
+The core problem, goal, and charging/EV sources are unchanged. We added <strong>U.S. Census ACS community estimates</strong> to the planned stack because the approved questions require income and housing context, which were not in the Milestone 0 data table. <em>(Since resolved:</em> the exact tables are ACS 2024 5-year B01003/B19013/B25003 and, for the affordability analysis, B25070, plus 2020 Census DHC P2 for urban/rural; the ZIP/ZCTA join is documented in the Data section.<em>)</em> Research questions were restated more tightly (four questions instead of one umbrella question plus two bullets) so each can be mapped to evidence.
 </p>
 <div class="table-wrap">
 <table>
@@ -700,7 +788,7 @@ The core problem, goal, and charging/EV sources are unchanged. We added <strong>
 <tr>
 <td><a href="https://www.census.gov/data/developers/data-sets/acs-5year.html" target="_blank" rel="noopener">U.S. Census ACS</a> <em>(added after M0)</em></td>
 <td>Income, housing, and population context</td>
-<td class="skeleton">Exact tables TBD (income, renter share, housing, vehicles, urban/rural proxy)</td>
+<td>Resolved: ACS 2024 5-year B01003, B19013, B25003, B25070; 2020 Census DHC P2 (urban/rural)</td>
 <td>Survey estimates; ZCTAs do not perfectly match USPS ZIP codes.</td>
 </tr>
 </tbody>
@@ -711,7 +799,7 @@ The core problem, goal, and charging/EV sources are unchanged. We added <strong>
 <article class="card"><h4>Equity bias</h4><p>Existing EV ownership may already reflect income inequality. Mitigation: include income, renter share, and charger access in an equity-aware priority view not demand alone.</p></article>
 <article class="card"><h4>Demand proxy</h4><p>Registration location is not where a vehicle is charged. Treat registrations as residential demand estimates and combine them with charger and population data.</p></article>
 <article class="card"><h4>Usage coverage</h4><p>EValuateCO covers only selected funded stations and may not represent statewide behavior.</p></article>
-<article class="card"><h4>Temporal mismatch</h4><p>Datasets may represent different years or update schedules. Snapshot dates will be recorded during data prep.</p></article>
+<article class="card"><h4>Temporal mismatch</h4><p>Datasets represent different years and update schedules. Snapshot dates were recorded during data prep (EV 2026-07-07, stations 2026-10-15, ACS 2020–2024, Census urban/rural 2020) and the mismatch is noted as a limitation.</p></article>
 </div>
 </div>
 </section>
@@ -789,6 +877,8 @@ that apply to real-world problems. He is especially interested in applying data 
 <li>Lee, D.-Y., Wilson, A., McDermott, M. H., Sovacool, B. K., Kaufmann, R., Isaac, R., Cleveland, C., Smith, M., Brown, M., &amp; Ward, J. (2025). Does electric mobility display racial or income disparities? Quantifying inequality in the distribution of electric vehicle adoption and charging infrastructure in the United States. <em>Applied Energy, 378</em>(Part A), 124795. <a href="https://doi.org/10.1016/j.apenergy.2024.124795" target="_blank" rel="noopener">https://doi.org/10.1016/j.apenergy.2024.124795</a></li>
 <li>State of Colorado. (n.d.). <em>Map of alternative fuels and electric vehicle charging stations</em>. Colorado Information Marketplace. <a href="https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7" target="_blank" rel="noopener">https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7</a></li>
 <li>U.S. Census Bureau. (n.d.). <em>American Community Survey 5-year data</em>. <a href="https://www.census.gov/data/developers/data-sets/acs-5year.html" target="_blank" rel="noopener">https://www.census.gov/data/developers/data-sets/acs-5year.html</a></li>
+<li>U.S. Census Bureau. (2021). <em>2020 Census Demographic and Housing Characteristics File (DHC), Table P2: Urban and Rural</em> [ZCTA; API: 2020/dec/dhc]. <a href="https://api.census.gov/data/2020/dec/dhc.html" target="_blank" rel="noopener">https://api.census.gov/data/2020/dec/dhc.html</a></li>
+<li>U.S. Census Bureau. (2024). <em>American Community Survey 5-year estimates, Table B25070: Gross Rent as a Percentage of Household Income</em> [ZCTA; API: 2024/acs/acs5]. <a href="https://api.census.gov/data/2024/acs/acs5/groups/B25070.html" target="_blank" rel="noopener">https://api.census.gov/data/2024/acs/acs5/groups/B25070.html</a></li>
 <li>U.S. Department of Energy, Alternative Fuels Data Center. (2026, September 3). <em>Alternative fueling station counts by state</em>. <a href="https://afdc.energy.gov/stations/states" target="_blank" rel="noopener">https://afdc.energy.gov/stations/states</a></li>
 </ol>
 </div>
@@ -798,7 +888,7 @@ that apply to real-world problems. He is especially interested in applying data 
 
 <footer>
 <div class="container footer-inner">
-<span>CSCI 5502 · Semester Group Project · Milestone 2</span>
+<span>CSCI 5502 · Semester Group Project · Milestones 2 &amp; 3</span>
 <span>Eddie Strand · Snehal Bhatnagar · Abdullah Bharde</span>
 </div>
 </footer>

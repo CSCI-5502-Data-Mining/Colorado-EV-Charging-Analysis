@@ -42,3 +42,5 @@ figures/*.jpg
 !figures/11_cluster_map.png
 !figures/12_need_ranking_shift.png
 !figures/13_need_ranking_equity.png
+!figures/14_urban_rural_ports.png
+!figures/15_renter_cost_burden.png

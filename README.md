@@ -29,6 +29,13 @@ Approved Milestone 0 question: *What factors are associated with EV adoption in 
 - Colorado Information Marketplace — [Charging station map](https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7)
 - U.S. Census Bureau ACS 5-year estimates — added after Milestone 0 for income/housing context; tables used: `B01003_001E` (population), `B19013_001E` (median household income), `B25003_001E` (occupied households), `B25003_003E` (renter-occupied) — [ACS 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html)
 
+The four sources above are the **original Milestone 2 source list**. The Milestone 3 supporting analysis (urban/rural + affordability) added two more official Census tables, fetched from the Census APIs on **2026-11-08** at national ZCTA geography (filtered to Colorado):
+
+- U.S. Census Bureau **2020 Decennial DHC, Table P2 (urban/rural population)** — variables `P2_001N`/`P2_002N`/`P2_003N`; endpoint `https://api.census.gov/data/2020/dec/dhc`; 33,774 ZCTA rows (477 of 500 Colorado codes matched)
+- U.S. Census Bureau **ACS 2024 5-year, Table B25070 (gross rent as % of household income)** — variables `B25070_001E` + `007E`–`010E` (with `011E` "not computed" excluded from the denominator); endpoint `https://api.census.gov/data/2024/acs/acs5`; 33,772 ZCTA rows (437 of 500 Colorado codes matched)
+
+**Join limitation:** both match on the 5-digit ZCTA code (ZIP↔ZCTA proxy), and the vintages differ (2020 Census vs 2020–2024 ACS vs 2026 EV/station snapshots), so comparisons are descriptive. Full provenance in [`docs/provenance.csv`](docs/provenance.csv); raw-fetch record in `data/raw/urban_affordability_provenance.json`.
+
 Acquisition instructions: [`data/README.md`](data/README.md). Do not commit secrets, credentials, or restricted raw extracts.
 
 ## Reproduce the Milestone 2 analysis
@@ -118,6 +125,16 @@ python src/cluster_communities.py
 #     need_ranking.csv, need_ranking_report.json, and figures 12-13.
 python src/rank_need.py
 
+# 3d. Supporting descriptive analysis (urban/rural + renter affordability).
+#     Separate from the frozen models. First fetch two official Census tables
+#     (needs a free CENSUS_API_KEY in .env; never printed/committed):
+#       - 2020 DHC P2 urban/rural population, ACS 2024 B25070 renter cost burden
+python src/fetch_urban_affordability.py
+#     Then classify CO ZCTAs (urban-dominant/mixed/rural-dominant by Census 2020
+#     urban share) and compare ports/1,000 hh (all/L2/DCFC) + renter cost
+#     burden. Writes urban_rural_affordability.csv + report and figures 14-15.
+python src/urban_rural_affordability.py
+
 # 3c. (optional) Pre-freeze diagnostics: reconcile the EDA correlation with the
 #     regression R2, audit nested-CV selection bias, held-out test by ZIP3
 #     group, and paired-fold comparison of the two Random Forests. Read-only;
@@ -137,6 +154,8 @@ Milestone 3 outputs (regenerated, not committed as raw data):
 - `data/processed/cluster_assignments.csv`, `cluster_profiles.json`, `candidate_underserved_zctas.csv`
 - `data/processed/need_ranking.csv`, `need_ranking_report.json` — ZCTA need ranking (both approaches), priority tiers, weights, sensitivity, scale-invariant percentile + tier stability, the 500→418 coverage audit, the access-tie audit, a tie-aware full-priority-group comparison, and household coverage of the top tier
 - `data/processed/diagnostics_m3.json` — the four pre-freeze diagnostic checks
+- `data/processed/urban_rural_affordability.csv`, `…_report.json` — supporting analysis: Census-2020 urban/rural classification, ports/1,000 hh (all/L2/DCFC) by class, and ACS B25070 renter cost burden (raw Census extracts are gitignored under `data/raw/`; provenance in `data/raw/urban_affordability_provenance.json`)
+- `figures/14_urban_rural_ports.png`, `figures/15_renter_cost_burden.png`
 - `results/experiments.csv`, `results/best_config.json`, `results/figures/*.png` — the experiment log, run summary (incl. the fully-nested procedure MAE), and harness figures (see [`results/README.md`](results/README.md))
 - `figures/06_model_comparison.png` … `figures/13_need_ranking_equity.png`
 
