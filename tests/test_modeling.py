@@ -471,6 +471,30 @@ class UrbanRuralAffordability(unittest.TestCase):
         finally:
             fua.requests.get = real_get
 
+    def test_fetch_connection_error_does_not_leak_api_key(self):
+        # A transport-level failure (connection error / timeout) is raised by
+        # requests.get() BEFORE any status code and its message embeds the full
+        # key-bearing URL; _fetch must re-raise without the key or that message.
+        import fetch_urban_affordability as fua
+
+        def _boom(*a, **k):
+            # Mimic requests embedding the key-bearing URL in the message.
+            raise fua.requests.exceptions.ConnectionError(
+                "HTTPSConnectionPool: Max retries exceeded with url: "
+                "/data?get=X&key=SECRETKEY123 (Caused by ...)")
+
+        real_get = fua.requests.get
+        fua.requests.get = _boom
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                fua._fetch('https://api.census.gov/data/2024/acs/acs5',
+                           ['B25070_001E'], 'SECRETKEY123')
+            msg = str(ctx.exception)
+            self.assertNotIn('SECRETKEY123', msg)
+            self.assertIn('ConnectionError', msg)
+        finally:
+            fua.requests.get = real_get
+
     def test_special_use_flag_catches_institutional_not_ordinary(self):
         # The special-use rule (renter_share==100% OR persons/household>5) must
         # flag institutional/group-quarters ZCTAs and leave ordinary ones alone.

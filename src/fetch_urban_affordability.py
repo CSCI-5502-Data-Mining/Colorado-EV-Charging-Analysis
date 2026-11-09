@@ -53,16 +53,30 @@ ACS_VARS = ['B25070_001E', 'B25070_007E', 'B25070_008E', 'B25070_009E',
 def _fetch(url, variables, key):
     """GET a Census table for all ZCTAs; return rows (header + data) or raise.
 
-    The API key is sent as a query parameter, so a raised requests.HTTPError --
-    whose message embeds the full request URL -- would leak the key into the
-    traceback/logs. We therefore do NOT call resp.raise_for_status() directly:
-    on a non-200 we raise our own error that reports only the status code and
-    the key-free base URL, and we never include the response body (which could
-    echo the query string either).
+    The API key is sent as a query parameter, so any requests exception whose
+    message embeds the full request URL would leak the key into the traceback/
+    logs. Two leak paths are guarded:
+      * TRANSPORT errors (ConnectionError, Timeout, TooManyRedirects, ...) are
+        raised by requests.get() before a status code exists and carry the full
+        key-bearing URL; we catch RequestException and re-raise (from None) with
+        only the exception type and key-free base URL.
+      * NON-200 responses: we do not call resp.raise_for_status() (its HTTPError
+        also embeds the URL); we raise our own status-only error.
+    We never include the response body either (it can echo the query string).
     """
-    resp = requests.get(url, params={'get': ','.join(variables),
-                                     'for': 'zip code tabulation area:*',
-                                     'key': key}, timeout=180)
+    try:
+        resp = requests.get(url, params={'get': ','.join(variables),
+                                         'for': 'zip code tabulation area:*',
+                                         'key': key}, timeout=180)
+    except requests.exceptions.RequestException as exc:
+        # Connection errors, timeouts, redirects, etc. are raised BEFORE we see
+        # a status code, and their message embeds the full request URL --
+        # including the key= query parameter. Re-raise WITHOUT the original
+        # message (only the exception type and key-free base URL), chaining with
+        # `from None` so the key-bearing original is not re-surfaced either.
+        raise RuntimeError(f'Census request to {url} failed: '
+                           f'{type(exc).__name__} (key redacted from this '
+                           f'message).') from None
     if resp.status_code != 200:
         raise RuntimeError(f'Census request to {url} failed with HTTP '
                            f'{resp.status_code} (key redacted from this message).')
