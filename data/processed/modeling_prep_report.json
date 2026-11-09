@@ -1,0 +1,42 @@
+{
+  "generated_utc": "2026-11-08T07:07:10.945860+00:00",
+  "input": "data/processed/colorado_ev_zcta_clean.csv",
+  "total_rows": 1161,
+  "colorado_rows": 500,
+  "out_of_state_rows_dropped": 661,
+  "colorado_definition": "zcta is a valid 5-digit code beginning with 80 or 81 (USPS/ZCTA proxy). WORKING definition only; see docs/limitations.md.",
+  "colorado_definition_followup": "Cross-check against a HUD/Census ZIP-to-county crosswalk or ZCTA polygons is future work; prefix reliance is a documented limitation.",
+  "audit_colorado_with_station": 293,
+  "audit_colorado_without_station": 207,
+  "audit_absence_rows_that_have_ev_data": 207,
+  "audit_absence_equals_no_ev_data_present": 0,
+  "audit_note": "No AFDC match for a CO registration code = AFDC lists no public/existing/electric station there. Join is a direct 5-digit match with identical normalization on both sides, so this is a genuine absence rather than a failed join.",
+  "audit_matched_station_blank_ports": 0,
+  "recoded_rows_to_zero_supply": 207,
+  "preserved_missing_port_rows": 0,
+  "min_households_filter": 100,
+  "regression_cohort_rows": 418,
+  "sensitivity_cohort_rows": 444,
+  "cluster_cohort_rows": 418,
+  "regression_features": [
+    "median_income",
+    "renter_share",
+    "population",
+    "households"
+  ],
+  "excluded_leakage_columns": [
+    "ev_count",
+    "bev_count",
+    "phev_count"
+  ],
+  "target": "ev_per_1000_households",
+  "regression_target_summary": {
+    "n": 418,
+    "min": 2.268,
+    "median": 45.039,
+    "mean": 65.183,
+    "max": 330.183,
+    "p99": 281.122
+  },
+  "output": "data/processed/modeling_colorado.csv"
+}

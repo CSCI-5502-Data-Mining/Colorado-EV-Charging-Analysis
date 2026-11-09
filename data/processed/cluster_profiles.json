@@ -1,0 +1,134 @@
+{
+  "generated_utc": "2026-11-08T07:08:50.619613+00:00",
+  "input": "data/processed/modeling_colorado.csv",
+  "features": [
+    "ev_per_1000_households",
+    "median_income",
+    "renter_share",
+    "ports_per_1000_households"
+  ],
+  "seed": 42,
+  "n_cohort": 418,
+  "note": "Descriptive clustering. Low public supply is one signal; an underserved verdict also weighs demand (adoption) and equity (income, renter share). Not a construction-suitability claim.",
+  "k_sweep": [
+    {
+      "k": 2,
+      "silhouette": 0.3842,
+      "inertia": 1172.07
+    },
+    {
+      "k": 3,
+      "silhouette": 0.4035,
+      "inertia": 890.68
+    },
+    {
+      "k": 4,
+      "silhouette": 0.3122,
+      "inertia": 698.24
+    },
+    {
+      "k": 5,
+      "silhouette": 0.2955,
+      "inertia": 586.46
+    },
+    {
+      "k": 6,
+      "silhouette": 0.2925,
+      "inertia": 531.96
+    },
+    {
+      "k": 7,
+      "silhouette": 0.2818,
+      "inertia": 477.28
+    },
+    {
+      "k": 8,
+      "silhouette": 0.2824,
+      "inertia": 437.33
+    }
+  ],
+  "chosen_k": 3,
+  "chosen_k_rule": "highest mean silhouette over k=2..8 (inertia/elbow recorded for reference)",
+  "stability": {
+    "method": "25 bootstrap resamples; ARI vs full-data fit",
+    "mean_ari": 0.7397,
+    "min_ari": 0.4752,
+    "max_ari": 0.9507
+  },
+  "cluster_profiles": {
+    "0": {
+      "n": 42,
+      "mean_ev_per_1000_households": 95.73,
+      "mean_median_income": 89345.0,
+      "mean_renter_share": 0.413,
+      "mean_ports_per_1000_households": 18.324,
+      "share_zero_supply": 0.0
+    },
+    "1": {
+      "n": 81,
+      "mean_ev_per_1000_households": 149.56,
+      "mean_median_income": 140485.0,
+      "mean_renter_share": 0.173,
+      "mean_ports_per_1000_households": 2.028,
+      "share_zero_supply": 0.185
+    },
+    "2": {
+      "n": 295,
+      "mean_ev_per_1000_households": 37.67,
+      "mean_median_income": 76463.0,
+      "mean_renter_share": 0.276,
+      "mean_ports_per_1000_households": 1.846,
+      "share_zero_supply": 0.444
+    }
+  },
+  "underserved_assessment": {
+    "reference_medians": {
+      "adoption": 45.04,
+      "supply": 1.214,
+      "income": 85602.0,
+      "renter_share": 0.256
+    },
+    "rule": "candidate_underserved (per ZCTA) = adoption >= cohort median AND public ports/1,000 hh <= cohort median. Equity flag (income <= median OR renter_share >= median) reported separately. Low supply alone is NOT an underserved verdict; demand and equity must be weighed.",
+    "by_cluster": {
+      "0": {
+        "n_in_cluster": 42,
+        "n_candidate_underserved": 0,
+        "n_also_equity_flagged": 0
+      },
+      "1": {
+        "n_in_cluster": 81,
+        "n_candidate_underserved": 37,
+        "n_also_equity_flagged": 3
+      },
+      "2": {
+        "n_in_cluster": 295,
+        "n_candidate_underserved": 39,
+        "n_also_equity_flagged": 22
+      }
+    }
+  },
+  "candidate_underserved_zcta_count": 76,
+  "candidate_underserved_equity_flagged_count": 25,
+  "candidate_underserved_zctas_top": [
+    "80220",
+    "81430",
+    "80212",
+    "80228",
+    "80432",
+    "80004",
+    "80840",
+    "80820",
+    "80221",
+    "80227",
+    "80922",
+    "80923",
+    "80003",
+    "80218",
+    "80232",
+    "80236",
+    "80231",
+    "80235",
+    "80520",
+    "81527"
+  ]
+}
