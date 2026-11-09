@@ -11,7 +11,7 @@ ZIP<->ZCTA match can be audited exactly like src/fetch_acs.py):
 
   2. 2024 ACS 5-year table B25070 -- gross rent as a share of household income
      (renter housing-cost burden):
-       B25070_001N total renters paying rent; the >=30% buckets are
+       B25070_001E total renters paying rent; the >=30% buckets are
        B25070_007E (30-34.9), _008E (35-39.9), _009E (40-49.9), _010E (>=50);
        B25070_011E is "not computed" and is EXCLUDED from the denominator.
 
@@ -51,14 +51,28 @@ ACS_VARS = ['B25070_001E', 'B25070_007E', 'B25070_008E', 'B25070_009E',
 
 
 def _fetch(url, variables, key):
-    """GET a Census table for all ZCTAs; return rows (header + data) or raise."""
+    """GET a Census table for all ZCTAs; return rows (header + data) or raise.
+
+    The API key is sent as a query parameter, so a raised requests.HTTPError --
+    whose message embeds the full request URL -- would leak the key into the
+    traceback/logs. We therefore do NOT call resp.raise_for_status() directly:
+    on a non-200 we raise our own error that reports only the status code and
+    the key-free base URL, and we never include the response body (which could
+    echo the query string either).
+    """
     resp = requests.get(url, params={'get': ','.join(variables),
                                      'for': 'zip code tabulation area:*',
                                      'key': key}, timeout=180)
-    resp.raise_for_status()
-    rows = resp.json()
+    if resp.status_code != 200:
+        raise RuntimeError(f'Census request to {url} failed with HTTP '
+                           f'{resp.status_code} (key redacted from this message).')
+    try:
+        rows = resp.json()
+    except ValueError:
+        raise RuntimeError(f'Census response from {url} was not valid JSON '
+                           f'(HTTP {resp.status_code}).')
     if not rows or len(rows) < 2 or 'zip code tabulation area' not in rows[0]:
-        raise RuntimeError(f'Unexpected Census response from {url}')
+        raise RuntimeError(f'Unexpected Census response structure from {url}.')
     return rows
 
 
@@ -74,23 +88,27 @@ def main():
     p.add_argument('--dhc-out', default=str(RAW / 'dhc_p2_zcta_2020.csv'))
     p.add_argument('--acs-out', default=str(RAW / 'acs_b25070_zcta_2024.csv'))
     p.add_argument('--provenance', default=str(RAW / 'urban_affordability_provenance.json'))
-    p.add_argument('--key', default=os.environ.get('CENSUS_API_KEY'))
     args = p.parse_args()
-    if not args.key:
+    # Environment-based authentication only: the key comes from CENSUS_API_KEY
+    # (via .env or an exported var), never a command-line flag, so it cannot end
+    # up in shell history or the process argument list.
+    key = os.environ.get('CENSUS_API_KEY')
+    if not key:
         raise SystemExit('CENSUS_API_KEY required (free: '
                          'https://api.census.gov/data/key_signup.html). '
-                         'Set it in .env; it is never printed or committed.')
+                         'Set it in .env or export it; it is never printed, '
+                         'logged, committed, or passed on the command line.')
 
     prov = {'retrieved_utc': datetime.now(timezone.utc).isoformat(), 'sources': {}}
 
-    dhc_rows = _fetch(DHC_URL, DHC_VARS, args.key)
+    dhc_rows = _fetch(DHC_URL, DHC_VARS, key)
     n_dhc = _write(dhc_rows, Path(args.dhc_out))
     prov['sources']['dhc_p2_2020'] = {
         'table': 'P2 (urban/rural population)', 'vintage': '2020 Decennial DHC',
         'api': DHC_URL, 'geography': 'ZCTA (national)', 'variables': DHC_VARS,
         'rows': n_dhc, 'output': str(Path(args.dhc_out).relative_to(ROOT).as_posix())}
 
-    acs_rows = _fetch(ACS_URL, ACS_VARS, args.key)
+    acs_rows = _fetch(ACS_URL, ACS_VARS, key)
     n_acs = _write(acs_rows, Path(args.acs_out))
     prov['sources']['acs_b25070_2024'] = {
         'table': 'B25070 (gross rent as % of household income)',

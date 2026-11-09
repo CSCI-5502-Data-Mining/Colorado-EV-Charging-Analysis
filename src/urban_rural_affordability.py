@@ -72,17 +72,38 @@ def load_dhc() -> pd.DataFrame:
 def load_b25070() -> pd.DataFrame:
     df = pd.read_csv(ACS_B25070_CSV, dtype='string')
     df['zcta'] = _zip5(df['zip code tabulation area'])
-    cols = ['B25070_001E', 'B25070_007E', 'B25070_008E', 'B25070_009E',
-            'B25070_010E', 'B25070_011E']
+    num_cols = ['B25070_007E', 'B25070_008E', 'B25070_009E', 'B25070_010E']
+    cols = ['B25070_001E', *num_cols, 'B25070_011E']
+    # Coerce to numeric, then treat ACS NEGATIVE SENTINELS (e.g. -666666666 for
+    # suppressed/unavailable estimates) as missing. Without this, a sentinel
+    # would be arithmetic'd into the numerator or denominator.
     for c in cols:
-        df[c] = pd.to_numeric(df[c], errors='coerce')
+        v = pd.to_numeric(df[c], errors='coerce')
+        df[c] = v.where(v >= 0)
     df = df.dropna(subset=['zcta']).drop_duplicates('zcta')
+
     # Cost-burdened renters = share paying >=30% of income on rent, EXCLUDING
     # the "not computed" category (B25070_011E) from the denominator.
-    burdened = df[['B25070_007E', 'B25070_008E', 'B25070_009E', 'B25070_010E']].sum(axis=1)
-    denom = df['B25070_001E'] - df['B25070_011E']
-    df['renter_cost_burden_share'] = np.where(denom > 0, burdened / denom, np.nan)
-    df['renter_households_rent_computed'] = denom
+    #
+    # Validation (reject rather than silently miscompute):
+    #  * numerator uses min_count=len(num_cols) so if ANY of the four >=30%
+    #    buckets is missing, the sum is NaN (pandas' default skipna would treat
+    #    a missing bucket as 0 and understate the burden).
+    #  * denominator = total renters minus not-computed; it must be POSITIVE and
+    #    both inputs must be present, else the share is NaN.
+    #  * the resulting share must lie in [0, 1]; an out-of-range value signals
+    #    inconsistent inputs and is rejected to NaN rather than reported.
+    burdened = df[num_cols].sum(axis=1, min_count=len(num_cols))
+    total = df['B25070_001E']
+    not_computed = df['B25070_011E']
+    denom = total - not_computed
+    valid_denom = total.notna() & not_computed.notna() & (denom > 0)
+    share = np.where(valid_denom, burdened / denom.where(valid_denom), np.nan)
+    share = pd.Series(share, index=df.index)
+    # Impossible shares (NaN numerator, or <0 / >1) are rejected.
+    share = share.where(share.between(0, 1))
+    df['renter_cost_burden_share'] = share
+    df['renter_households_rent_computed'] = denom.where(valid_denom)
     return df[['zcta', 'renter_cost_burden_share',
                'renter_households_rent_computed']]
 

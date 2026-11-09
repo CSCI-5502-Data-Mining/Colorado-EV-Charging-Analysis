@@ -11,11 +11,11 @@ Raw datasets are **not** stored in this repository. Several sources are public, 
 | EValuateCO charging usage | Atlas Public Policy / Colorado Energy Office | Public dashboard; some exports may require request | Selected funded stations | Covers a subset of Colorado stations (selection bias). Use as supplementary validation. [EValuateCO](https://atlaspolicy.com/evaluateco/) |
 | Map of alternative fuels and EV charging | Colorado Information Marketplace | Public open-data portal | Station-level | May overlap AFDC; check duplicates. [Portal](https://data.colorado.gov/Energy/Map-of-Alternative-Fuels-and-Electric-Vehicle-Char/fwyp-a5y7) |
 
-## Added after Milestone 0 (to be confirmed in analysis)
+## Added after Milestone 0 (resolved)
 
 | Dataset | Provider | Why added | Status |
 | --- | --- | --- | --- |
-| American Community Survey 5-year estimates | U.S. Census Bureau | Milestone 0 questions require income and housing context that were not in the original data table | Acquisition method and exact tables still to be documented. [ACS 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html) |
+| American Community Survey 5-year estimates | U.S. Census Bureau | Milestone 0 questions require income and housing context that were not in the original data table | **Resolved.** Milestone 2 uses ACS 2024 5-year tables B01003, B19013, B25003 via `src/fetch_acs.py`; Milestone 3 adds B25070 (renter cost burden) and 2020 DHC P2 (urban/rural) via `src/fetch_urban_affordability.py`. See the acquisition table below and `docs/provenance.csv`. [ACS 5-year](https://www.census.gov/data/developers/data-sets/acs-5year.html) |
 
 ## Acquisition for Milestone 2
 

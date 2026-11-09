@@ -395,6 +395,82 @@ class UrbanRuralAffordability(unittest.TestCase):
             self.assertAlmostEqual(float(out['renter_cost_burden_share'].iloc[0]), 0.5, places=6)
             self.assertEqual(int(out['renter_households_rent_computed'].iloc[0]), 80)
 
+    def _load_b25070_from(self, rows):
+        """Run load_b25070 against a one-row synthetic B25070 frame."""
+        import tempfile
+        import urban_rural_affordability as ura
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / 'b25070.csv'
+            pd.DataFrame([{**rows, 'zip code tabulation area': '80301'}]).to_csv(path, index=False)
+            orig = ura.ACS_B25070_CSV
+            ura.ACS_B25070_CSV = path
+            try:
+                return ura.load_b25070()
+            finally:
+                ura.ACS_B25070_CSV = orig
+
+    def test_missing_numerator_bucket_is_not_treated_as_zero(self):
+        # If any >=30% bucket is missing, the share must be NaN (rejected), not
+        # computed from a silently-zeroed numerator.
+        out = self._load_b25070_from({
+            'B25070_001E': 100, 'B25070_007E': 10, 'B25070_008E': '',  # missing
+            'B25070_009E': 5, 'B25070_010E': 15, 'B25070_011E': 20})
+        self.assertTrue(pd.isna(out['renter_cost_burden_share'].iloc[0]))
+
+    def test_negative_census_sentinel_rejected(self):
+        # An ACS negative sentinel (e.g. -666666666) must be treated as missing,
+        # so the row cannot produce a bogus share.
+        out = self._load_b25070_from({
+            'B25070_001E': -666666666, 'B25070_007E': 10, 'B25070_008E': 10,
+            'B25070_009E': 5, 'B25070_010E': 15, 'B25070_011E': 20})
+        self.assertTrue(pd.isna(out['renter_cost_burden_share'].iloc[0]))
+        self.assertTrue(pd.isna(out['renter_households_rent_computed'].iloc[0]))
+
+    def test_nonpositive_denominator_rejected(self):
+        # total == not-computed -> denominator 0 -> share NaN, not a divide error.
+        out = self._load_b25070_from({
+            'B25070_001E': 20, 'B25070_007E': 0, 'B25070_008E': 0,
+            'B25070_009E': 0, 'B25070_010E': 0, 'B25070_011E': 20})
+        self.assertTrue(pd.isna(out['renter_cost_burden_share'].iloc[0]))
+
+    def test_impossible_share_above_one_rejected(self):
+        # If buckets sum to more than the denominator (inconsistent input), the
+        # share would exceed 1 and must be rejected to NaN.
+        out = self._load_b25070_from({
+            'B25070_001E': 50, 'B25070_007E': 30, 'B25070_008E': 30,
+            'B25070_009E': 30, 'B25070_010E': 30, 'B25070_011E': 10})
+        self.assertTrue(pd.isna(out['renter_cost_burden_share'].iloc[0]))
+
+    def test_valid_row_unchanged_by_validation(self):
+        # A clean row still computes exactly as before (no regression).
+        out = self._load_b25070_from({
+            'B25070_001E': 100, 'B25070_007E': 10, 'B25070_008E': 10,
+            'B25070_009E': 5, 'B25070_010E': 15, 'B25070_011E': 20})
+        self.assertAlmostEqual(float(out['renter_cost_burden_share'].iloc[0]), 0.5, places=6)
+
+    def test_fetch_errors_do_not_leak_api_key(self):
+        # A failed Census request must raise without the key appearing in the
+        # error message (the key is a query parameter on the request URL).
+        import urban_rural_affordability  # noqa: F401 (ensures src on path)
+        import fetch_urban_affordability as fua
+
+        class _Resp:
+            status_code = 403
+            def json(self):
+                return []
+
+        real_get = fua.requests.get
+        fua.requests.get = lambda *a, **k: _Resp()
+        try:
+            with self.assertRaises(RuntimeError) as ctx:
+                fua._fetch('https://api.census.gov/data/2024/acs/acs5',
+                           ['B25070_001E'], 'SECRETKEY123')
+            msg = str(ctx.exception)
+            self.assertNotIn('SECRETKEY123', msg)
+            self.assertIn('403', msg)
+        finally:
+            fua.requests.get = real_get
+
     def test_special_use_flag_catches_institutional_not_ordinary(self):
         # The special-use rule (renter_share==100% OR persons/household>5) must
         # flag institutional/group-quarters ZCTAs and leave ordinary ones alone.
