@@ -37,6 +37,8 @@ from modeling_common import (FIGURES, MODELING_CSV, PROCESSED, ROOT, git_commit,
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
+from plot_style import ANNOTATION_SIZE, apply_web_style  # noqa: E402
+apply_web_style()
 
 RAW = ROOT / 'data' / 'raw'
 DHC_CSV = RAW / 'dhc_p2_zcta_2020.csv'
@@ -129,7 +131,20 @@ def main():
     p.add_argument('--input', default=str(MODELING_CSV))
     p.add_argument('--out', default=str(PROCESSED / 'urban_rural_affordability.csv'))
     p.add_argument('--report', default=str(PROCESSED / 'urban_rural_affordability_report.json'))
+    p.add_argument('--figures-only', action='store_true',
+                   help='Redraw figures 14-15 from the committed --out CSV and '
+                        '--report JSON without re-fetching or recomputing '
+                        '(no Census API key or data/raw files needed).')
     args = p.parse_args()
+
+    if args.figures_only:
+        merged = pd.read_csv(args.out, dtype={'zcta': 'string', 'zip3': 'string'})
+        with open(args.report, encoding='utf-8') as fh:
+            report = json.load(fh)
+        _figures(merged, report)
+        print('Redrew figures 14-15 from', repo_relative(args.out), 'and',
+              repo_relative(args.report))
+        return
 
     mdl = pd.read_csv(args.input, dtype={'zcta': 'string', 'zip3': 'string'})
     co = mdl.loc[is_colorado(mdl['zcta'])].copy()
@@ -333,8 +348,10 @@ def _figures(merged, report):
     ax.set(ylabel='Public ports per 1,000 households (aggregate)',
            title='Charging-port density by ZCTA urban class (Census 2020)')
     for i, v in enumerate(allv):
-        ax.text(x[i] - w, v, f'{v:.1f}', ha='center', va='bottom', fontsize=8)
-    ax.legend()
+        ax.text(x[i] - w, v, f'{v:.1f}', ha='center', va='bottom', fontsize=ANNOTATION_SIZE)
+    # Headroom so the legend sits above the bars instead of covering them.
+    ax.set_ylim(0, max(allv) * 1.35)
+    ax.legend(ncol=3, loc='upper center')
     fig.tight_layout(); fig.savefig(FIGURES / '14_urban_rural_ports.png', dpi=160); plt.close(fig)
 
     # Fig 15: renter cost burden distribution by urban class.
@@ -347,7 +364,7 @@ def _figures(merged, report):
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.boxplot(data, tick_labels=ticks, showmeans=True)
         ax.set(ylabel='Share of renters paying \u2265 30% of income on rent',
-               title='Renter housing-cost burden by ZCTA urban class (ACS 2024 B25070)')
+               title='Renter housing-cost burden by ZCTA urban class\n(ACS 2024 B25070)')
         ax.set_ylim(0, 1)
         fig.tight_layout(); fig.savefig(FIGURES / '15_renter_cost_burden.png', dpi=160); plt.close(fig)
 

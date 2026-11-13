@@ -158,3 +158,42 @@ footer { background: #13212b; color: #dbe4ea; padding: 26px 0; }
   h2, h3 { break-after: avoid; page-break-after: avoid; }
   a { color: inherit; text-decoration: none; }
 }
+
+/* Models section: key-results summary, in-section index, collapsible technical detail */
+.key-results { background: var(--accent-soft); border: 1px solid #cfe6df; border-radius: var(--radius); padding: 1.1rem 1.3rem; margin: 1.6rem 0 1.2rem; }
+.key-results-title, .section-index-title { margin: 0 0 .5rem; font-size: .78rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent-dark); }
+.key-results ul { margin: 0; padding-left: 1.2rem; }
+.key-results li { margin: .35rem 0; }
+.section-index { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); padding: 1rem 1.3rem; margin: 0 0 2rem; }
+.section-index ol { margin: 0; padding-left: 1.4rem; columns: 2; column-gap: 2rem; }
+.section-index li { margin: .2rem 0; break-inside: avoid; }
+.section-index a { text-decoration: none; }
+.section-index a:hover { text-decoration: underline; }
+#models h3[id] { scroll-margin-top: 82px; }
+.tech-detail { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); margin: 1rem 0 1.4rem; }
+.tech-detail > summary { cursor: pointer; padding: .8rem 1rem .8rem 2.2rem; font-weight: 600; color: var(--text); list-style: none; position: relative; }
+.tech-detail > summary::-webkit-details-marker { display: none; }
+.tech-detail > summary::before { content: "\25B8"; position: absolute; left: 1rem; color: var(--accent); }
+.tech-detail[open] > summary::before { content: "\25BE"; }
+.tech-detail > summary:hover { color: var(--accent); }
+.tech-detail[open] > summary { border-bottom: 1px solid var(--line); }
+.tech-detail > :not(summary) { margin-left: 1rem; margin-right: 1rem; }
+.tech-detail > .table-wrap { margin: 1rem; }
+@media (max-width: 600px) { .section-index ol { columns: 1; } }
+@media print { .tech-detail > summary::before { content: none; } }
+
+/* Justified body text for long-form sections (tablet/desktop only: on narrow
+   phones justification opens large gaps between words, so it stays left-aligned).
+   Captions, tables, short labels and the reference list stay left-aligned. */
+@media (min-width: 600px) {
+  .section p, .section li { text-align: justify; -webkit-hyphens: auto; hyphens: auto; }
+  .section figcaption, .section th, .section td, .section .q-type,
+  .section .question p, .references li, .section .team-links,
+  .section .tech-detail > summary, .section .section-index li, .section .key-results li { text-align: left; -webkit-hyphens: manual; hyphens: manual; }
+  /* Inline code can't hyphenate or wrap, so justified lines containing it stretch
+     into wide gaps; keep those paragraphs left-aligned. */
+  .section p:has(code), .section li:has(code) { text-align: left; }
+}
+
+/* Long URLs in Works cited / repository list were forcing horizontal scroll on phones. */
+.references a, #repo a, .section code { overflow-wrap: anywhere; }

@@ -52,6 +52,8 @@ from experiment_eval import Candidate, nested_cv
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
+from plot_style import apply_web_style  # noqa: E402
+apply_web_style()
 
 SEED = 42
 N_SPLITS = 5
@@ -126,7 +128,21 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--input', default=str(MODELING_CSV))
     p.add_argument('--metrics', default=str(PROCESSED / 'regression_metrics.json'))
+    p.add_argument('--figures-only', action='store_true',
+                   help='Redraw figures 06 and 09 from the committed --metrics '
+                        'JSON without refitting. Figures 07-08 plot held-out '
+                        'predictions, which are not stored, so they still need '
+                        'a full run.')
     args = p.parse_args()
+
+    if args.figures_only:
+        with open(args.metrics, encoding='utf-8') as fh:
+            saved = json.load(fh)
+        FIGURES.mkdir(parents=True, exist_ok=True)
+        _fig_model_comparison(saved['nested_cv']['results'])
+        _fig_feature_importance(saved['rf_feature_importance'])
+        print('Redrew figures 06 and 09 from', repo_relative(args.metrics))
+        return
 
     assert_no_leakage(REGRESSION_FEATURES)
     FIGURES.mkdir(parents=True, exist_ok=True)
@@ -331,7 +347,7 @@ def main():
     print(f"Wrote {repo_relative(args.metrics)} and regression figures.")
 
 
-def _figures(results, nested, y_te, fitted, X_te, features, rf_importance):
+def _fig_model_comparison(nested):
     # Fig: model comparison (nested-CV MAE with fold-std error bars = headline)
     keys = ['baseline_mean', 'baseline_income_only', 'ridge', 'random_forest']
     labels = ['Mean', 'Income-only', 'Ridge', 'Random Forest']
@@ -341,10 +357,24 @@ def _figures(results, nested, y_te, fitted, X_te, features, rf_importance):
     ax.bar(labels, maes, yerr=stds, color=['#999', '#6a9', '#48c', '#c63'],
            error_kw={'ecolor': '#333', 'capsize': 4})
     ax.set(ylabel='Nested-CV MAE (EVs per 1,000 households)',
-           title='Regression comparison — nested ZIP3-grouped CV (lower is better)')
+           title='Regression comparison\nnested ZIP3-grouped CV (lower is better)')
     for i, v in enumerate(maes):
         ax.text(i, v + stds[i], f'{v:.1f}', ha='center', va='bottom')
     fig.tight_layout(); fig.savefig(FIGURES / '06_model_comparison.png', dpi=160); plt.close(fig)
+
+
+def _fig_feature_importance(rf_importance):
+    # Fig: RF feature importance
+    items = sorted(rf_importance.items(), key=lambda kv: kv[1])
+    fig, ax = plt.subplots(figsize=(7.2, 4.4))
+    ax.barh([k for k, _ in items], [v for _, v in items], color='#c63')
+    ax.set(xlabel='Random Forest feature importance',
+           title='What drives predicted EV adoption')
+    fig.tight_layout(); fig.savefig(FIGURES / '09_feature_importance.png', dpi=160); plt.close(fig)
+
+
+def _figures(results, nested, y_te, fitted, X_te, features, rf_importance):
+    _fig_model_comparison(nested)
 
     # Fig: predicted vs actual (both candidate models on the test set)
     fig, axes = plt.subplots(1, 2, figsize=(11, 5), sharex=True, sharey=True)
@@ -365,13 +395,7 @@ def _figures(results, nested, y_te, fitted, X_te, features, rf_importance):
            title='Random Forest residuals (held-out test)')
     fig.tight_layout(); fig.savefig(FIGURES / '08_residuals.png', dpi=160); plt.close(fig)
 
-    # Fig: RF feature importance
-    items = sorted(rf_importance.items(), key=lambda kv: kv[1])
-    fig, ax = plt.subplots(figsize=(7.2, 4.4))
-    ax.barh([k for k, _ in items], [v for _, v in items], color='#c63')
-    ax.set(xlabel='Random Forest feature importance',
-           title='What drives predicted EV adoption')
-    fig.tight_layout(); fig.savefig(FIGURES / '09_feature_importance.png', dpi=160); plt.close(fig)
+    _fig_feature_importance(rf_importance)
 
 
 if __name__ == '__main__':

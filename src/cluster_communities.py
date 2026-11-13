@@ -35,6 +35,8 @@ from modeling_common import (
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
+from plot_style import apply_web_style  # noqa: E402
+apply_web_style()
 
 # Standardized ZCTA rows include many exact duplicates (e.g. every verified
 # zero-supply area), so distance matmuls hit zero-norm pairs and numpy emits

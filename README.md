@@ -134,6 +134,10 @@ python src/fetch_urban_affordability.py
 #     urban share) and compare ports/1,000 hh (all/L2/DCFC) + renter cost
 #     burden. Writes urban_rural_affordability.csv + report and figures 14-15.
 python src/urban_rural_affordability.py
+#     Redraw figures without refitting or a Census API key (reads the committed
+#     processed outputs; text sizing for all figures lives in src/plot_style.py):
+#       python src/train_regression.py --figures-only        # figures 06 and 09
+#       python src/urban_rural_affordability.py --figures-only  # figures 14-15
 
 # 3c. (optional) Pre-freeze diagnostics: reconcile the EDA correlation with the
 #     regression R2, audit nested-CV selection bias, held-out test by ZIP3
