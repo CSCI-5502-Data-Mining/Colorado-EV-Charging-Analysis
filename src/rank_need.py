@@ -47,6 +47,8 @@ from modeling_common import (FIGURES, MODELING_CSV, PROCESSED, git_commit,
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
+from plot_style import apply_web_style  # noqa: E402
+apply_web_style()
 
 TOP_N = 30  # size of the "top-ranked" set compared across methods
 
@@ -521,7 +523,7 @@ def _figures(cohort, report):
     ax.plot(lim, lim, 'k--', lw=1, alpha=.6)
     ax.set(xlabel='Baseline rank (access-only; 1 = highest need)',
            ylabel='Composite rank (demand + equity + access)',
-           title='How charging-need ranking shifts when equity + demand are added')
+           title='How charging-need ranking shifts\nwhen equity + demand are added')
     fig.colorbar(sc, ax=ax, label='equity component (higher = more renter/low-income)')
     fig.tight_layout(); fig.savefig(FIGURES / '12_need_ranking_shift.png', dpi=160); plt.close(fig)
 
@@ -542,7 +544,7 @@ def _figures(cohort, report):
     ax.axhline(ec['cohort_overall']['share_lower_income'], color='#48c', ls=':', lw=1, alpha=.7)
     ax.set_xticks(x); ax.set_xticklabels(groups)
     ax.set(ylabel='Share of the priority group',
-           title='Equity composition of priority groups (dotted = cohort baseline)')
+           title='Equity composition of priority groups\n(dotted = cohort baseline)')
     ax.legend()
     fig.tight_layout(); fig.savefig(FIGURES / '13_need_ranking_equity.png', dpi=160); plt.close(fig)
 
